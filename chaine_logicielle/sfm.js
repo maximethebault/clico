@@ -1,7 +1,5 @@
 var spawn = require('child_process').spawn,
-    ls    = spawn('cmd', ['/s', '/c', '"C:\\VisualSFM_windows_64bit\\VisualSFM.exe sfm+pmvs C:\\VisualSFM_windows_64bit\\lion res.nvm"'], { 
-  windowsVerbatimArguments: true
-});
+    ls    = spawn('VisualSFM', ['sfm+pmvs',  'data/lion', 'data/res.nvm']);
 
 ls.stdout.on('data', function (data) {
   console.log('stdout: ' + data);
