@@ -7,6 +7,11 @@ var tabCommands = 	['33166 data\\list.txt\n', //Open+ Multi Images
 					 '33471 E:\\Mes documents\\GitHub\\cnpao\\chaine_logicielle\\data\\output.nvm\n']; //Reconstruct Dense
 var ident = 0;
 
+var fs = require('fs');
+var nbPictures = fs.readdirSync('data\\visualize').length-1; //nombre de fichiers .jpg charges
+console.log(nbPictures.toString()); //test affiche le nombre d'images chargees
+
+
 ls.stdout.on('data', function (data) {
   console.log('stdout: ' + data);
 });
@@ -37,7 +42,24 @@ function callNextCommand(){
 /* @param data, la ligne de log
 */
 client.on('data', function(data) {
-  console.log(data.toString());
+	console.log(data.toString());
+	
+	//gestion du temps
+	switch(ident){
+	case 1: //Open+ Multi Images
+		/^(\d+):/.exec(data); //cherche un numero d'image dans le log
+		////// PROBLEME COMMENT COMMENCER NUMEROTATION A 1 ????
+		////// PROBLEME PLACE DANS LE CODE
+		console.log('loading image '+RegExp.$1+'/'+nbPictures);
+		break;
+	case 2: //Compute Missing Match
+		/^(\d+){4} and (\d+){4}/.exec(data); //cherche ligne type 0001 and 0002
+		var nbMatch = nbPictures*(nbPictures-1)/2; //somme des termes suite arithm.
+		var currentMatch =(RegExp.$1+1)+(RegExp.$2+1)*(RegExp.$2)/2;
+		console.log('compute match '+(RegExp.$1+1)+'/'+nbMatch);
+		break;
+	}
+	
   	/* indexOf compare une chaine avec la chaine en parametre
 	   retourne -1 si rien trouve, ou bien la position de la chaine trouvee */
 	if(data.toString().indexOf('*command processed*')>-1) {
