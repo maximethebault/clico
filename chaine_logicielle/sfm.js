@@ -6,6 +6,8 @@ var stream = require('stream');
 var inherit = require('inherit');
 var endOfLine = require('os').EOL;
 var path = require('path');
+var WebSocketServer = require('websocket').server;
+var http = require('http');
 
 
 var Step = inherit({
@@ -108,7 +110,7 @@ var StepComputeMatch = inherit(Step, {
          * - Première sous-étape : autant de détection + extraction que d'images
          * - Deuxième sous-étape : n*(n+1)/2 (suite arithmétique)
          */
-        this.totalEvents = this.vsfm.nbImages + ((this.vsfm.nbImages*(this.vsfm.nbImages-1))/2);
+        this.totalEvents = this.vsfm.nbImages + ((this.vsfm.nbImages * (this.vsfm.nbImages - 1)) / 2);
         self.vsfm.vsfmSocket.write('33033\n');
     },
     getName: function() {
@@ -292,8 +294,8 @@ var VisualSFM = inherit({
         this.closing = true;
         // il faut prendre l'initiative et fermer le Socket plutôt que de fermer brutalement le processus et tuer le Socket dans d'atroces souffrances :(
         /*this.vsfmSocket.end(function() {
-            self.vsfmProcess.kill();
-        });*/
+         self.vsfmProcess.kill();
+         });*/
     },
     vsfmClosed: function() {
         console.log('Vsfm s\'est arrêté !');
@@ -314,21 +316,47 @@ var VisualSFM = inherit({
 
 var vs = new VisualSFM('data\\GreatWall_full\\');
 vs.run();
-/*
- case 1: //Open+ Multi Images
- var matches = /^(\d+):/.exec(data); //cherche un numero d'image dans le log
- if(matches) {
- console.log('## loading image ' + (parseInt(matches[1]) + 1) + '/' + nbPictures);
- }
- break;
- case 2: //Compute Missing Match
- var matchesFirstPart = /^SIFT: (\d){4}/.exec(data), //cherche ligne type SIFT: 0000
- matchesSecondPart = /^(\d){4} and (\d){4}: \d+/.exec(data); //cherche ligne type 0001 and 0002
- if(matchesFirstPart) {
- console.log('## sift' + (iSift++) + '/' + nbPictures);
- }
- else if(matchesSecondPart) {
- console.log('## compute match ' + (iMatch++) + '/' + nbMatch);
- }
- break;
- */
+
+var server = http.createServer(function(request, response) {
+    console.log((new Date()) + ' Received request for ' + request.url);
+    response.writeHead(404);
+    response.end();
+});
+server.listen(8080, function() {
+    console.log((new Date()) + ' Server is listening on port 8080');
+});
+
+wsServer = new WebSocketServer({
+    httpServer: server,
+    autoAcceptConnections: false
+});
+
+function originIsAllowed(origin) {
+    // TODO: code pour vérifier que l'origine est bien celle attendue (vérification nom de domaine)
+    return true;
+}
+
+wsServer.on('request', function(request) {
+    if (!originIsAllowed(request.origin)) {
+      // On rejette les connexions depuis des origines inconnues
+      request.reject();
+      console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
+      return;
+    }
+
+    var connection = request.accept(null, request.origin);
+    console.log((new Date()) + ' Connection accepted.');
+    connection.on('message', function(message) {
+        if (message.type === 'utf8') {
+            console.log('Received Message: ' + message.utf8Data);
+            connection.sendUTF(message.utf8Data);
+        }
+        else if (message.type === 'binary') {
+            console.log('Received Binary Message of ' + message.binaryData.length + ' bytes');
+            connection.sendBytes(message.binaryData);
+        }
+    });
+    connection.on('close', function(reasonCode, description) {
+        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+    });
+});
