@@ -337,7 +337,7 @@ var VisualSFM = inherit({
         var self = this;
         var port = 9999;
         if(os.networkInterfaces().hasOwnProperty('eth0:0'))
-            this.vsfmProcess = spawn('xvfb-run', ['-extension', 'GLX', '-a', 'VisualSFM', 'listen+log', port]);
+            this.vsfmProcess = spawn('xvfb-run', ['--server-args', '-screen 0 1024x768x24', '-extension', 'GLX', '-a', 'VisualSFM', 'listen+log', port]);
         else
             this.vsfmProcess = spawn('VisualSFM', ['listen+log', port]);
         this.vsfmProcess.stdout.on('data', function(data) {
