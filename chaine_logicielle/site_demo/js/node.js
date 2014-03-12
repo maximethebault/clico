@@ -1,6 +1,7 @@
 var Socket = inherit({
     __constructor: function() {
-        this.sock = new WebSocket("ws://localhost:8080/");
+        var hostname = window.location.host;
+        this.sock = new WebSocket("ws://"+hostname+":8080/");
         var dfd = $.Deferred();
         this.sock.onopen = function(event) {
             dfd.resolve();

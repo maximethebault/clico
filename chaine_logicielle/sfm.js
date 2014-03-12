@@ -4,11 +4,12 @@ var fs = require('fs');
 var readline = require('readline');
 var stream = require('stream');
 var inherit = require('inherit');
-var endOfLine = require('os').EOL;
 var path = require('path');
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var deferred = require('deferred');
+var os = require("os");
+var endOfLine = os.EOL;
 
 var Step = inherit({
     __constructor: function(vsfm) {
@@ -465,7 +466,11 @@ var server = http.createServer(function(request, response) {
     response.writeHead(404);
     response.end();
 });
-server.listen(8080, function() {
+var hostname = 'localhost';
+if(os.networkInterfaces().hasOwnProperty('eth0:0')) {
+    hostname = os.networkInterfaces()['eth0:0'].address;
+}
+server.listen(8080, hostname, function() {
     console.log((new Date()) + ' Server is listening on port 8080');
 });
 
