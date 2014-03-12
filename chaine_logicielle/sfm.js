@@ -340,6 +340,12 @@ var VisualSFM = inherit({
             this.vsfmProcess = spawn('xvfb-run', ['-a', 'VisualSFM', 'listen+log', port]);
         else
             this.vsfmProcess = spawn('VisualSFM', ['listen+log', port]);
+        this.vsfmProcess.stdout.on('data', function(data) {
+            console.log('[STDOUT] ' + data);
+        });
+        this.vsfmProcess.stderr.on('data', function(data) {
+            console.log('[STDERR] ' + data);
+        });
         this.vsfmProcess.on('error', this.vsfmProcessError.bind(self));
         this.vsfmProcess.on('close', this.vsfmClosed.bind(self));
         this.setState(this.__self.RUNNING);
@@ -354,7 +360,7 @@ var VisualSFM = inherit({
                     self.vsfmSocket = net.connect({port: port}, function() {
                         self.runNextStep();
                         readline.createInterface(self.vsfmSocket, self.vsfmSocket).on('line', function(line) {
-                            console.log('[LINE] '+line);
+                            console.log('[LINE] ' + line);
                             if(!self.currentStep.processLine(line)) {
                                 // processLine renvoie false si l'étape est terminée et qu'il faut passer à la suivante
                                 self.runNextStep();
