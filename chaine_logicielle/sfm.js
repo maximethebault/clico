@@ -354,6 +354,7 @@ var VisualSFM = inherit({
                     self.vsfmSocket = net.connect({port: port}, function() {
                         self.runNextStep();
                         readline.createInterface(self.vsfmSocket, self.vsfmSocket).on('line', function(line) {
+                            console.log('[LINE] '+line);
                             if(!self.currentStep.processLine(line)) {
                                 // processLine renvoie false si l'étape est terminée et qu'il faut passer à la suivante
                                 self.runNextStep();
