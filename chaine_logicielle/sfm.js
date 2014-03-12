@@ -1,4 +1,4 @@
-var spawn = require('child_process').spawn;
+ï»¿var spawn = require('child_process').spawn;
 var net = require('net');
 var fs = require('fs');
 var readline = require('readline');
@@ -8,12 +8,12 @@ var endOfLine = require('os').EOL;
 var path = require('path');
 var WebSocketServer = require('websocket').server;
 var http = require('http');
-
+var deferred = require('deferred');
 
 var Step = inherit({
     __constructor: function(vsfm) {
         /**
-         * L'objet VisualSFM auquel la Step est associée
+         * L'objet VisualSFM auquel la Step est associÃ©e
          */
         this.vsfm = vsfm;
     },
@@ -22,6 +22,8 @@ var Step = inherit({
      * Renvoie false si le traitement doit se terminer
      */
     processLine: function(line) {
+        if(this.vsfm.state != VisualSFM.RUNNING)
+            return false;
         if(line.indexOf('*command processed*') > -1) {
             this.vsfm.updateProgress(100);
             return false;
@@ -33,49 +35,49 @@ var Step = inherit({
 var StepOpen = inherit(Step, {
     run: function() {
         var self = this;
-        console.log('Début de l\'étape ' + this.getName());
-        // une étape qui était en état d'erreur peut être relancée plusieurs fois, c'est pour cela qu'on doit remettre la progression à 0 à chaque nouveau run
+        console.log('Debut de l\'etape ' + this.getName());
+        // une Ã©tape qui Ã©tait en Ã©tat d'erreur peut Ãªtre relancÃ©e plusieurs fois, c'est pour cela qu'on doit remettre la progression Ã  0 Ã  chaque nouveau run
         this.internalProgress = 0;
         // VisualSFM ne peut ouvrir que les fichiers txt contenant les chemins vers toutes les images
-        // Il va falloir créer ce fichier !
+        // Il va falloir crÃ©er ce fichier !
         fs.readdir(this.vsfm.pathToImages, function(err, files) {
             if(err) {
-                self.vsfm.vsfmError(new Error("Impossible d'ouvrir le répertoire en entrée " + err));
+                self.vsfm.vsfmError(new Error("Impossible d'ouvrir le rÃ©pertoire en entrÃ©e " + err));
                 // on ne va pas plus loin
                 return;
             }
             if(!files) {
-                // si aucun fichier JPEG a été trouvé, on donne à manger au gestionnaire d'erreurs de la classe mère
-                self.vsfm.vsfmError(new Error("Aucun fichier JPEG valide en entrée"));
+                // si aucun fichier JPEG a Ã©tÃ© trouvÃ©, on donne Ã  manger au gestionnaire d'erreurs de la classe mÃ¨re
+                self.vsfm.vsfmError(new Error("Aucun fichier JPEG valide en entrÃ©e"));
                 // on ne va pas plus loin
                 return;
             }
             // le contenu de notre futur fichier texte
             var dirToTxt = [];
             files.forEach(function(file) {
-                // on récupère l'extension du fichier
+                // on rÃ©cupÃ¨re l'extension du fichier
                 var token = file.split('.');
                 var ext = token[token.length - 1].toLowerCase();
-                // on vérifie qu'il fait partie de la famille des JPEG
+                // on vÃ©rifie qu'il fait partie de la famille des JPEG
                 if(ext == 'jpg' || ext == 'jpeg') {
                     dirToTxt.push(file);
                 }
             });
             if(!dirToTxt.length) {
-                // si aucun fichier JPEG a été trouvé, on donne à manger au gestionnaire d'erreurs de la classe mère
-                self.vsfm.vsfmError(new Error("Aucun fichier JPEG valide en entrée"));
+                // si aucun fichier JPEG a Ã©tÃ© trouvÃ©, on donne Ã  manger au gestionnaire d'erreurs de la classe mÃ¨re
+                self.vsfm.vsfmError(new Error("Aucun fichier JPEG valide en entrÃ©e"));
                 // on ne va pas plus loin
                 return;
             }
             self.vsfm.nbImages = dirToTxt.length;
-            // on écrit le fichier texte
+            // on Ã©crit le fichier texte
             fs.writeFile(self.vsfm.pathToImages + 'list.txt', dirToTxt.join(endOfLine), function(err) {
                 if(err) {
                     self.vsfm.vsfmError(err);
                     // on ne va pas plus loin
                     return;
                 }
-                // tout est prêt : lançons le chargement des images dans VisualSFM !
+                // tout est prÃªt : lanÃ§ons le chargement des images dans VisualSFM !
                 self.vsfm.vsfmSocket.write('33166 ' + self.vsfm.pathToImages + 'list.txt\n');
             });
         });
@@ -85,7 +87,7 @@ var StepOpen = inherit(Step, {
     },
     processLine: function(line) {
         if(this.__base(line)) {
-            // cherche un numero d'image dans le log (les lignes intéressantes sont de la forme 0: NomImg (sans l'extension)
+            // cherche un numero d'image dans le log (les lignes intÃ©ressantes sont de la forme 0: NomImg (sans l'extension)
             var matches = /^\d+:/.exec(line);
             if(matches)
                 this.vsfm.updateProgress(((++this.internalProgress) / this.vsfm.nbImages) * 100);
@@ -98,17 +100,17 @@ var StepOpen = inherit(Step, {
 var StepComputeMatch = inherit(Step, {
     run: function() {
         var self = this;
-        console.log('Début de l\'étape ' + this.getName());
-        // une étape qui était en état d'erreur peut être relancée plusieurs fois, c'est pour cela qu'on doit remettre la progression à 0 à chaque nouveau run
+        console.log('DÃ©but de l\'etape ' + this.getName());
+        // une Ã©tape qui Ã©tait en Ã©tat d'erreur peut Ãªtre relancÃ©e plusieurs fois, c'est pour cela qu'on doit remettre la progression Ã  0 Ã  chaque nouveau run
         this.internalProgress = 0;
         /*
-         * Cette étape peut être divisée en deux sous-étapes :
-         * - dans un premier temps, détection + extraction des features SIFT de toutes les images
-         * - dans un second temps, comparaison une à une de toutes les paires d'images possibles
+         * Cette Ã©tape peut Ãªtre divisÃ©e en deux sous-Ã©tapes :
+         * - dans un premier temps, dÃ©tection + extraction des features SIFT de toutes les images
+         * - dans un second temps, comparaison une Ã  une de toutes les paires d'images possibles
          * 
-         * Pour établir la progression, il nous faut donc établir le nombre d'évènements qui surviendront durant l'ensemble de l'étape :
-         * - Première sous-étape : autant de détection + extraction que d'images
-         * - Deuxième sous-étape : n*(n+1)/2 (suite arithmétique)
+         * Pour Ã©tablir la progression, il nous faut donc Ã©tablir le nombre d'Ã©vÃ¨nements qui surviendront durant l'ensemble de l'Ã©tape :
+         * - PremiÃ¨re sous-Ã©tape : autant de dÃ©tection + extraction que d'images
+         * - DeuxiÃ¨me sous-Ã©tape : n*(n+1)/2 (suite arithmÃ©tique)
          */
         this.totalEvents = this.vsfm.nbImages + ((this.vsfm.nbImages * (this.vsfm.nbImages - 1)) / 2);
         self.vsfm.vsfmSocket.write('33033\n');
@@ -130,29 +132,87 @@ var StepComputeMatch = inherit(Step, {
 var StepReconstructionSparse = inherit(Step, {
     run: function() {
         var self = this;
-        console.log('Début de l\'étape ' + this.getName());
-        // une étape qui était en état d'erreur peut être relancée plusieurs fois, c'est pour cela qu'on doit remettre la progression à 0 à chaque nouveau run
+        console.log('DÃ©but de l\'etape ' + this.getName());
+        // une Ã©tape qui Ã©tait en Ã©tat d'erreur peut Ãªtre relancÃ©e plusieurs fois, c'est pour cela qu'on doit remettre la progression Ã  0 Ã  chaque nouveau run
         this.internalProgress = 0;
-        /*
-         * Cette étape peut être divisée en deux sous-étapes :
-         * - dans un premier temps, détection + extraction des features SIFT de toutes les images
-         * - dans un second temps, comparaison une à une de toutes les paires d'images possibles
-         * 
-         * Pour établir la progression, il nous faut donc établir le nombre d'évènements qui surviendront durant l'ensemble de l'étape :
-         * - Première sous-étape : autant de détection + extraction que d'images
-         * - Deuxième sous-étape : n*(n+1)/2 (suite arithmétique)
+        /**
+         * Contient la liste des images composant le modÃ¨le
          */
+        this.model = [];
         this.totalEvents = this.vsfm.nbImages;
         self.vsfm.vsfmSocket.write('33041\n');
     },
     getName: function() {
-        return "Reconstruction simple du modèle 3D";
+        return "Reconstruction simple du modÃ¨le 3D";
     },
     processLine: function(line) {
         if(this.__base(line)) {
-            var matches = /^(Initialization: Th|Initialize with|#[0-9]+:)/.exec(line);
-            if(matches)
-                this.vsfm.updateProgress(((++this.internalProgress) / this.totalEvents) * 100);
+            var matches = /^Initialize with (.*) and (.*)$/.exec(line);
+            if(matches) {
+                this.model = [matches[1], matches[2]];
+                this.internalProgress += 2;
+                this.vsfm.updateProgress((this.internalProgress / this.totalEvents) * 100);
+            }
+            else {
+                var matches2 = /^(?:#|\+)[0-9]+: \[(.*)\]/.exec(line);
+                if(matches2) {
+                    // on Ã©vite les doublons dans le modÃ¨le
+                    if(this.model.indexOf(matches2[1]) == -1)
+                        this.model.push(matches2[1]);
+                    this.vsfm.updateProgress(((++this.internalProgress) / this.totalEvents) * 100);
+                }
+                else {
+                    if(line.substring(0, 21) == 'Resuming SfM finished') {
+                        // TODO: remettre Ã  0.8
+                        if(this.model.length / this.vsfm.nbImages < 0.1) {
+                            // si moins de 80% des images ont Ã©tÃ© utilisÃ©es
+                            var err = new Error("Moins de 80% des images ont Ã©tÃ© utilisÃ©es pour la gÃ©nÃ©ration du modÃ¨le 3D. Liste : " + this.model);
+                            err.recoverable = false;
+                            this.vsfm.vsfmError(err);
+                            // pour que le traitement se mette en pause, on renvoit false pour indiquer que nous sommes "coincÃ©s" dans cette Ã©tape
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+});
+
+var StepReconstructionDense = inherit(Step, {
+    run: function() {
+        var self = this;
+        console.log('DÃ©but de l\'etape ' + this.getName());
+        // une Ã©tape qui Ã©tait en Ã©tat d'erreur peut Ãªtre relancÃ©e plusieurs fois, c'est pour cela qu'on doit remettre la progression Ã  0 Ã  chaque nouveau run
+        this.internalProgress = 0;
+        this.totalEvents = 0;
+        self.vsfm.vsfmSocket.write('33471 ' + path.resolve(self.vsfm.pathToImages) + '\\nvm\n');
+    },
+    getName: function() {
+        return "Reconstruction dense du modÃ¨le 3D";
+    },
+    processLine: function(line) {
+        if(this.__base(line)) {
+            // TODO: progression
+            // PMVS gÃ©nÃ¨re des clusters d'au maximum x images
+            // un cluster de x images prend en moyenne x secondes
+            // rechercher et Ã©tablir la progression grÃ¢ce Ã  ces donnÃ©es
+            // faire une rÃ©gression linÃ©aire si le nb d'img dans le cluster est < au max
+            var matches = /^Undistorting ([0-9]+) images/.exec(line);
+            if(matches) {
+                // TODO: rajouter un poids suivant le nombre de clusters prÃ©vus Ã  partir du nombre d'images
+                this.totalEvents = matches[1];
+                this.vsfm.updateProgress((this.internalProgress / this.totalEvents) * 100);
+            }
+            else {
+                var matches2 = /^#[0-9]+: /.exec(line);
+                if(matches2) {
+                    this.internalProgress++;
+                    this.vsfm.updateProgress((this.internalProgress / this.totalEvents) * 100);
+                }
+            }
             return true;
         }
         return false;
@@ -163,60 +223,101 @@ var VisualSFM = inherit({
     /**
      * Constructeur
      * 
-     * @param pathToImages string le chemin vers le dossier contenant les images, avec le séparateur à la fin (slash ou backslash)
+     * @param pathToImages string le chemin vers le dossier contenant les images, avec le sÃ©parateur Ã  la fin (slash ou backslash)
      */
-    __constructor: function(pathToImages) {
+    __constructor: function(arrayOfImages) {
         /**
-         * Le chemin vers les images, avec le séparateur à la fin (slash ou backslash)
+         * Le chemin vers les images, avec le sÃ©parateur Ã  la fin (slash ou backslash)
          */
-        this.pathToImages = pathToImages;
+        this.arrayOfImages = arrayOfImages;
         /**
-         * Contient l'étape en cours d'éxécution
+         * Contient l'Ã©tape en cours d'Ã©xÃ©cution
          */
         this.currentStep;
         /**
-         * Contient l'index de l'étape en cours d'éxécution
+         * Contient l'index de l'Ã©tape en cours d'Ã©xÃ©cution
          */
         this.currentStepIndex = -1;
         /**
-         * Le nombre d'images qui seront traitées
+         * Le nombre d'images qui seront traitÃ©es
          */
         this.nbImages = 0;
         /**
-         * Indique si le traitement est en pause
-         */
-        this.isPaused = false;
-        /**
-         * Quand on est en train de fermer le processus, on passe ça à true pour ignorer toutes les erreurs
+         * Quand on est en train de fermer le processus, on passe Ã§a Ã  true pour ignorer toutes les erreurs
          */
         this.closing = false;
+        /**
+         * Contient une liste de clients attendant les notifications de progression, erreurs, etc.
+         */
+        this.listeners = [];
+        /**
+         * L'Ã©tat actuelle du traitement
+         * 0 : En attente
+         * 1 : En cours
+         * 2 : En pause
+         * 3 : ArrÃªtÃ©
+         */
+        this.state = this.__self.WAITING;
+    },
+    addListener: function(con) {
+        this.listeners.push(con);
+    },
+    removeListener: function(con) {
+        var index = this.listeners.indexOf(con);
+        if(index > -1) {
+            this.listeners.splice(index, 1);
+        }
+    },
+    sendMessage: function(message) {
+        this.listeners.forEach(function(con) {
+            message.socketId = con.socketId;
+            con.sendUTF(JSON.stringify(message));
+        });
+    },
+    createDBRecord: function(cb) {
+        // TODO
+        this.id = 1;
+        cb();
+    },
+    /**
+     * Met toutes les images contenues dans le tableau arrayOfImages dans un rÃ©pertoire unique
+     */
+    imagesIntoDir: function(cb) {
+        var self = this;
+        this.pathToImages = 'data/' + this.id + '/';
+        fs.mkdir(this.pathToImages, function(err) {
+            if(err)
+                console.log('Impossible de creer le repertoire : ' + err);
+            deferred.map(self.arrayOfImages, function(oldFile) {
+                var dfd = deferred();
+                fs.rename('site_demo/server/php/files/' + path.basename(oldFile), self.pathToImages + path.basename(oldFile), function(err) {
+                    if(err)
+                        console.log('Impossible de deplacer le fichier ' + oldFile + ' : ' + err);
+                    dfd.resolve();
+                });
+                return dfd.promise;
+            }).done(function() {
+                cb();
+            });
+        });
     },
     /**
      * Met le traitement en pause
      */
     pause: function() {
-        if(!this.isPaused) {
-            this.isPaused = true;
-            this.paused();
-        }
+        this.setState(this.__self.PAUSED);
     },
     /**
-     * Appelée quand le traitement a été mis en pause
-     */
-    paused: function() {
-        console.log('Vsfm paused');
-    },
-    /**
-     * Reprend l'éxécution du traitement
+     * Reprend l'Ã©xÃ©cution du traitement
      * 
-     * @param restartStep boolean Indique s'il faut redémarrer l'étape à laquelle le traitement c'était arrêté où s'il faut passer directement à la suivante
-     *                            Par défaut, vrai (recommence l'étape)
+     * @param restartStep boolean Indique s'il faut redÃ©marrer l'Ã©tape Ã  laquelle le traitement c'Ã©tait arrÃªtÃ© oÃ¹ s'il faut passer directement Ã  la suivante
+     *                            Par dÃ©faut, vrai (recommence l'Ã©tape)
      */
     resume: function(restartStep) {
-        // restartStep par défaut à vrai
+        // restartStep par dÃ©faut Ã  vrai
         restartStep = restartStep || true;
-        if(this.isPaused) {
-            this.isPaused = false;
+        if(this.state != this.__self.RUNNING) {
+            this.setState(this.__self.RUNNING);
             if(restartStep)
                 this.currentStep.run();
             else
@@ -224,50 +325,80 @@ var VisualSFM = inherit({
         }
     },
     done: function() {
-
+        this.setState(this.__self.DONE);
     },
     run: function() {
         /*
-         * "this" est un mot clé spécial de node désignant la fonction dans laquelle on est actuellement et son environnement (on nomme tout ça le contexte)
+         * "this" est un mot clÃ© spÃ©cial de node dÃ©signant la fonction dans laquelle on est actuellement et son environnement (on nomme tout Ã§a le contexte)
          * Ici, le contexte est l'instance de l'objet VisualSFM (pour simplifier)
-         * On sauvegarde le contexte dans une variable, car dès qu'on entre dans une nouvelle fonction, le contexte (this) change et on perdrait l'accès aux propriétés/méthodes de l'instance de VisualSFM
+         * On sauvegarde le contexte dans une variable, car dÃ¨s qu'on entre dans une nouvelle fonction, le contexte (this) change et on perdrait l'accÃ¨s aux propriÃ©tÃ©s/mÃ©thodes de l'instance de VisualSFM
          */
         var self = this;
-        this.vsfmProcess = spawn('VisualSFM', ['listen', '9999']);
+        var port = 9999;
+        this.vsfmProcess = spawn('VisualSFM', ['listen+log', port]);
         this.vsfmProcess.on('error', this.vsfmProcessError.bind(self));
         this.vsfmProcess.on('close', this.vsfmClosed.bind(self));
-        setTimeout(function() {
-            // manière moche de s'assurer que VisualSFM soit bien prêt et en train d'écouter sur le port donné avant de s'y connecter.
-            self.vsfmSocket = net.connect({port: 9999}, function() {
-                self.runNextStep();
-                readline.createInterface(self.vsfmSocket, self.vsfmSocket).on('line', function(line) {
-                    if(!self.currentStep.processLine(line)) {
-                        // processLine renvoie false si l'étape est terminée et qu'il faut passer à la suivante
+        this.setState(this.__self.RUNNING);
+        /*
+         * On laisse un peu de temps Ã  VisualSFM pour se lancer.
+         * Pendant ce temps lÃ , on crÃ©Ã© l'enregistrement en BDD et on rÃ©unit tous les fichiers dans un mÃªme dossier
+         */
+        this.createDBRecord(function() {
+            self.imagesIntoDir(function() {
+                setTimeout(function() {
+                    // maniÃ¨re moche de s'assurer que VisualSFM soit bien prÃªt et en train d'Ã©couter sur le port donnÃ© avant de s'y connecter.
+                    self.vsfmSocket = net.connect({port: port}, function() {
                         self.runNextStep();
-                    }
-                });
+                        readline.createInterface(self.vsfmSocket, self.vsfmSocket).on('line', function(line) {
+                            if(!self.currentStep.processLine(line)) {
+                                // processLine renvoie false si l'Ã©tape est terminÃ©e et qu'il faut passer Ã  la suivante
+                                self.runNextStep();
+                            }
+                        });
+                    });
+                    /*
+                     * La fonction associÃ©e Ã  l'Ã©vÃ¨nement est appelÃ©e avec un contexte propre Ã  cet Ã©vÃ¨nement par dÃ©faut.
+                     * On change ce comportement grÃ¢ce Ã  bind, le this reprÃ©sentera dÃ¨s Ã  prÃ©sent l'instance de l'objet.
+                     */
+                    self.vsfmSocket.on('error', self.vsfmSocketError.bind(self));
+                }, 2000);
             });
-            /*
-             * La fonction associée à l'évènement est appelée avec un contexte propre à cet évènement par défaut.
-             * On change ce comportement grâce à bind, le this représentera dès à présent l'instance de l'objet.
-             */
-            self.vsfmSocket.on('error', self.vsfmSocketError.bind(self));
-        }, 2000);
+
+        });
     },
     runNextStep: function() {
-        // si le traitement est en pause, on empêche l'éxécution de cette fonction
-        if(this.isPaused)
+        // si le traitement est en pause, on empÃªche l'Ã©xÃ©cution de cette fonction
+        if(this.state != this.__self.RUNNING)
             return;
-        // on commence par incrémenter l'index indiquant l'étape courante, et ensuite on compare avec la taille du tableau des commandes
+        // on commence par incrÃ©menter l'index indiquant l'Ã©tape courante, et ensuite on compare avec la taille du tableau des commandes
         if(++this.currentStepIndex == this.__self.tabCommands.length) {
             this.vsfmClose();
             this.done();
             return;
         }
+        this.setState(this.__self.RUNNING);
         this.currentStep = new this.__self.tabCommands[this.currentStepIndex](this);
         this.currentStep.run();
     },
+    setState: function(state) {
+        if(state != this.state) {
+            this.state = state;
+            var stateObject = {
+                type: '_progress-state',
+                state: state
+            };
+            this.sendMessage(stateObject);
+        }
+    },
     updateProgress: function(newProgress) {
+        var progressObject = {
+            type: '_progress-update',
+            currentStepNb: this.currentStepIndex + 1,
+            totalStepNb: this.__self.tabCommands.length,
+            currentStepName: this.currentStep.getName(),
+            currentStepProgress: newProgress
+        };
+        this.sendMessage(progressObject);
         console.log('Progression ' + newProgress);
     },
     vsfmSocketError: function(err) {
@@ -285,6 +416,12 @@ var VisualSFM = inherit({
             return;
         console.log('Erreur avec le traitement : ' + err);
         if(!err.recoverable) {
+            console.log('pausing');
+            var errorObject = {
+                type: '_progress-error',
+                message: err.message
+            };
+            this.sendMessage(errorObject);
             this.pause();
         }
     },
@@ -292,30 +429,36 @@ var VisualSFM = inherit({
         var self = this;
         console.log('closing');
         this.closing = true;
-        // il faut prendre l'initiative et fermer le Socket plutôt que de fermer brutalement le processus et tuer le Socket dans d'atroces souffrances :(
-        /*this.vsfmSocket.end(function() {
-         self.vsfmProcess.kill();
-         });*/
+        // il faut prendre l'initiative et fermer le Socket plutÃ´t que de fermer brutalement le processus et tuer le Socket dans d'atroces souffrances :(
+        this.vsfmSocket.end(function() {
+            self.vsfmProcess.kill();
+        });
     },
     vsfmClosed: function() {
-        console.log('Vsfm s\'est arrêté !');
+        console.log('Vsfm s\'est arrete !');
     }
 },
 {
-    // propriétés & méthodes statiques
+    // propriÃ©tÃ©s & mÃ©thodes statiques
     tabCommands: [
         //'33166 data\\list.txt\n', // Open+ Multi Images
         StepOpen,
         StepComputeMatch,
-        StepReconstructionSparse
-                //'33033\n', // Compute Missing Match
-                //'33041\n', // Reconstruct Sparse
-                //'33471 E:\\Mes documents\\GitHub\\cnpao\\chaine_logicielle\\data\\output.nvm\n'// Reconstruct Dense
-    ]
+        StepReconstructionSparse,
+        StepReconstructionDense
+    ],
+    WAITING: 0,
+    RUNNING: 1,
+    PAUSED: 2,
+    DONE: 3
 });
 
-var vs = new VisualSFM('data\\GreatWall_full\\');
-vs.run();
+/*var vs = new VisualSFM('data\\GreatWall_full\\');
+ vs.run();*/
+
+/*
+ * Controller
+ */
 
 var server = http.createServer(function(request, response) {
     console.log((new Date()) + ' Received request for ' + request.url);
@@ -332,31 +475,39 @@ wsServer = new WebSocketServer({
 });
 
 function originIsAllowed(origin) {
-    // TODO: code pour vérifier que l'origine est bien celle attendue (vérification nom de domaine)
+    // TODO: code pour vÃ©rifier que l'origine est bien celle attendue (vÃ©rification nom de domaine)
     return true;
 }
 
 wsServer.on('request', function(request) {
-    if (!originIsAllowed(request.origin)) {
-      // On rejette les connexions depuis des origines inconnues
-      request.reject();
-      console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
-      return;
+    if(!originIsAllowed(request.origin)) {
+        // On rejette les connexions depuis des origines inconnues
+        request.reject();
+        console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
+        return;
     }
 
     var connection = request.accept(null, request.origin);
+    var vs;
     console.log((new Date()) + ' Connection accepted.');
     connection.on('message', function(message) {
-        if (message.type === 'utf8') {
-            console.log('Received Message: ' + message.utf8Data);
-            connection.sendUTF(message.utf8Data);
-        }
-        else if (message.type === 'binary') {
-            console.log('Received Binary Message of ' + message.binaryData.length + ' bytes');
-            connection.sendBytes(message.binaryData);
+        if(message.type === 'utf8') {
+            var messageData = JSON.parse(message.utf8Data);
+            connection.socketId = messageData.socketId;
+            if(messageData.action == 'vsfm-new') {
+                vs = new VisualSFM(messageData.images);
+                vs.addListener(connection);
+                vs.run();
+                // TODO: client can create several VisualSFM instances
+                // remember them all to removeListener in the end
+            }
+            //connection.sendUTF(message.utf8Data);
+
         }
     });
     connection.on('close', function(reasonCode, description) {
+        if(vs)
+            vs.removeListener(connection);
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 });
