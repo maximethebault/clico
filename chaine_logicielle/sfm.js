@@ -1,4 +1,4 @@
-﻿var spawn = require('child_process').spawn;
+var spawn = require('child_process').spawn;
 var net = require('net');
 var fs = require('fs');
 var readline = require('readline');
@@ -336,7 +336,10 @@ var VisualSFM = inherit({
          */
         var self = this;
         var port = 9999;
-        this.vsfmProcess = spawn('VisualSFM', ['listen+log', port]);
+        if(os.networkInterfaces().hasOwnProperty('eth0:0'))
+            this.vsfmProcess = spawn('xvfb-run', ['-a', 'VisualSFM', 'listen+log', port]);
+        else
+            this.vsfmProcess = spawn('VisualSFM', ['listen+log', port]);
         this.vsfmProcess.on('error', this.vsfmProcessError.bind(self));
         this.vsfmProcess.on('close', this.vsfmClosed.bind(self));
         this.setState(this.__self.RUNNING);
