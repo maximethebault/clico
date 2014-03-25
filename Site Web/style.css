@@ -1,0 +1,86 @@
+body {
+	background-color: rgba(222,194,115,0.05);
+}
+
+.navbar {
+	border-right: 1px solid rgba(0,0,0,0.25);
+	border-left: 1px solid rgba(0,0,0,0.25);
+	border-bottom: 1px solid rgba(0,0,0,0.25);
+}
+
+#hc_bloc_page {
+	margin: auto;
+	margin-top: 20px;
+	margin-bottom: 20px;
+	width: 80%;
+	min-height: 600px;
+}
+
+#hc_header {
+	width: 100%;
+	background-image:url('images/header.png');
+	background-size: 100% 100%;
+	background-repeat: no-repeat;
+	min-height: 144px;
+	border: 1px solid rgba(0,0,0,0.25);
+	border-bottom: 0px;
+	border-radius: 10px 10px 0px 0px;
+}
+
+#hc_corps {
+	min-height: 400px;
+	border: 1px solid rgba(0,0,0,0.25);
+	border-top: 0px;
+	border-radius: 0px 0px 10px 10px;
+	background-color: white;
+	padding: 20px 20px 20px 20px;
+}
+
+#hc_corps p {
+	margin-left: 20px;
+	text-align: justify;
+	margin-right: 20px;
+}
+
+#form_inscription {
+	width: 40%;
+	min-width: 250px;
+	margin: auto;
+	background-color: #f8f8f8;
+	border: 1px solid #bbbbbb;
+	border-radius: 10px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.tab-pane {
+	border: 1px solid #dddddd;
+	border-top: 0px;
+	padding: 20px 30px 20px 30px;
+	min-height: 300px;
+}
+
+.btn-file {
+    position: relative;
+    overflow: hidden;
+    width: 89px;
+    height: 34px;
+}
+
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 999px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    outline: none;
+    background: white;
+    cursor: inherit;
+    display: block;
+}
