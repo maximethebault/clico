@@ -1,0 +1,32 @@
+-- phpMyAdmin SQL Dump
+-- version 4.0.6
+-- http://www.phpmyadmin.net
+--
+-- Client: localhost
+-- Généré le: Mar 25 Mars 2014 à 22:52
+-- Version du serveur: 5.5.33
+-- Version de PHP: 5.5.3
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+
+--
+-- Base de données: `CNPAO`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `membres`
+--
+
+CREATE TABLE `membres` (
+  `membres_id` int(11) NOT NULL AUTO_INCREMENT,
+  `nom` varchar(255) NOT NULL,
+  `prenom` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `motdepasse` varchar(255) NOT NULL,
+  `moment_inscription` int(11) NOT NULL,
+  `statut` int(11) NOT NULL,
+  PRIMARY KEY (`membres_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
