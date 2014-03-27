@@ -49,7 +49,7 @@ var Socket = inherit({
 var socket = new Socket();
 
 /**
- * Sorte d'interface implantée par tous les objets voulant communiquer par WebSocket, pour pouvoir se différentier les uns des autres
+ * Classe implantée par tous les objets voulant communiquer par WebSocket, pour pouvoir se différencier les uns des autres
  */
 var SocketInterface = inherit({
     initSocketInterface: function() {
@@ -150,6 +150,10 @@ var SFM = inherit([SocketInterface, ProgressManager], {
     __constructor: function() {
         this.initSocketInterface();
         this.initProgressManager();
+        $(this).on('_record-id', this.setRecordId);
+    },
+    setRecordId: function(evt, id) {
+        this.id = id;
     },
     launch: function(images) {
         socket.send(this, {
@@ -192,8 +196,7 @@ $('body').on('click', '.generate', function(e) {
             $('#3d_progress').addClass('progress-bar-danger').removeClass('progress-bar-info').removeClass('progress-bar-success');
         else if(progressManager.state == ProgressManager.DONE) {
             $('#3d_progress').addClass('progress-bar-success').removeClass('progress-bar-info');
-            //nvm.0.ply
-            $('#3d_status').text('Fini ! <a href="../data/1/nvm.0.ply">Télécharger</a>');
+            $('#3d_status').html('Fini ! <a href="../data/1/nvm.0.ply">Télécharger</a>');
         }
         else
             $('#3d_progress').addClass('progress-bar-info').removeClass('progress-bar-danger').removeClass('progress-bar-success');

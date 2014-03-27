@@ -11,7 +11,11 @@
  */
 
 error_reporting(E_ALL | E_STRICT);
-if(!array_key_exists('mid', $_POST))
+
+session_start();
+if(!array_key_exists('id', $_SESSION))
+    die;
+if(!array_key_exists('mid', $_REQUEST))
     die('Id du modèle manquant');
 
 function get_full_url() {
@@ -25,7 +29,21 @@ function get_full_url() {
             substr($_SERVER['SCRIPT_NAME'], 0, strrpos($_SERVER['SCRIPT_NAME'], '/'));
 }
 require 'UploadHandler.php';
+require_once '../../../../config.php';
+require_once '../loadActiveRecord.php';
 // TODO: vérifier si l'utilisateur a bien les droits sur ce modèle !
-$modelDataPath = '../../../../../data/' . intval($_POST['mid']) . '/';
+$modelDataPath = 'data/' . intval($_REQUEST['mid']) . '/';
 @mkdir($modelDataPath, 0777);
-$upload_handler = new UploadHandler(array('upload_dir' => $modelDataPath, 'upload_url' => $modelDataPath, 'script_url' => get_full_url() . '/?mid=' . intval($_POST['mid'])));
+$upload_handler = new UploadHandler(array('upload_dir' => '../../../../../' . $modelDataPath, 'upload_url' => '../' . $modelDataPath, 'script_url' => get_full_url() . '/?mid=' . intval($_REQUEST['mid'])));
+if($filePath = $upload_handler->getFileResult()) {
+    if($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+        $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['mid']), $modelDataPath . $filePath)));
+        $file->delete();
+    }
+    elseif($_SERVER['REQUEST_METHOD'] == 'POST') {
+        $file = new File();
+        $file->model3d_id = intval($_REQUEST['mid']);
+        $file->path = $modelDataPath . $filePath;
+        $file->save();
+    }
+}

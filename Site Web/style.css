@@ -84,3 +84,10 @@ body {
     cursor: inherit;
     display: block;
 }
+
+.uploader {
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    margin: 10px 0px;
+    padding: 10px;
+}

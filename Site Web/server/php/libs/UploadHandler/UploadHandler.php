@@ -14,6 +14,8 @@ class UploadHandler
 {
 
     protected $options;
+    
+    protected $fileResult;
 
     // PHP File Upload error message codes:
     // http://php.net/manual/en/features.file-upload.errors.php
@@ -994,6 +996,7 @@ class UploadHandler
     }
 
     protected function handle_image_file($file_path, $file) {
+        $this->fileResult = $file->name;
         $failed_versions = array();
         foreach($this->options['image_versions'] as $version => $options) {
             if ($this->create_scaled_image($file->name, $version, $options)) {
@@ -1313,6 +1316,7 @@ class UploadHandler
             $file_path = $this->get_upload_path($file_name);
             $success = is_file($file_path) && $file_name[0] !== '.' && unlink($file_path);
             if ($success) {
+                $this->fileResult = $file_name;
                 foreach($this->options['image_versions'] as $version => $options) {
                     if (!empty($version)) {
                         $file = $this->get_upload_path($file_name, $version);
@@ -1325,6 +1329,10 @@ class UploadHandler
             $response[$file_name] = $success;
         }
         return $this->generate_response($response, $print_response);
+    }
+    
+    public function getFileResult() {
+        return $this->fileResult;
     }
 
 }

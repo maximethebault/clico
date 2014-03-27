@@ -10,6 +10,15 @@ var http = require('http');
 var deferred = require('deferred');
 var os = require("os");
 var endOfLine = os.EOL;
+var mysql = require('mysql');
+var pool = mysql.createPool({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'cnpao',
+    connectionLimit: 1
+});
+var globalPort = 9999;
 
 var Step = inherit({
     __constructor: function(vsfm) {
@@ -226,11 +235,13 @@ var VisualSFM = inherit({
      * 
      * @param pathToImages string le chemin vers le dossier contenant les images, avec le séparateur à la fin (slash ou backslash)
      */
-    __constructor: function(arrayOfImages) {
-        /**
-         * Le chemin vers les images, avec le séparateur à la fin (slash ou backslash)
-         */
-        this.arrayOfImages = arrayOfImages;
+    __constructor: function(model_id, process_id, membres_id) {
+        this.model_id = model_id;
+        this.id = process_id;
+        this.membres_id = membres_id;
+        this.pathToImages = '../data/' + model_id + '/';
+        // TODO: supprimer cette var.
+        this.listeners = [];
         /**
          * Contient l'étape en cours d'éxécution
          */
@@ -247,17 +258,6 @@ var VisualSFM = inherit({
          * Quand on est en train de fermer le processus, on passe ça à true pour ignorer toutes les erreurs
          */
         this.closing = false;
-        /**
-         * Contient une liste de clients attendant les notifications de progression, erreurs, etc.
-         */
-        this.listeners = [];
-        /**
-         * L'état actuelle du traitement
-         * 0 : En attente
-         * 1 : En cours
-         * 2 : En pause
-         * 3 : Arrêté
-         */
         this.state = this.__self.WAITING;
     },
     addListener: function(con) {
@@ -270,37 +270,31 @@ var VisualSFM = inherit({
         }
     },
     sendMessage: function(message) {
-        this.listeners.forEach(function(con) {
-            message.socketId = con.socketId;
-            con.sendUTF(JSON.stringify(message));
-        });
-    },
-    createDBRecord: function(cb) {
-        // TODO
-        this.id = 1;
-        cb();
+        message.mid = this.model_id;
+        sendTo(this.membres_id, message);
     },
     /**
      * Met toutes les images contenues dans le tableau arrayOfImages dans un répertoire unique
      */
     imagesIntoDir: function(cb) {
-        var self = this;
-        this.pathToImages = 'data/' + this.id + '/';
-        fs.mkdir(this.pathToImages, function(err) {
-            if(err)
-                console.log('Impossible de creer le repertoire : ' + err);
-            deferred.map(self.arrayOfImages, function(oldFile) {
-                var dfd = deferred();
-                fs.rename('site_demo/server/php/files/' + path.basename(oldFile), self.pathToImages + path.basename(oldFile), function(err) {
-                    if(err)
-                        console.log('Impossible de deplacer le fichier ' + oldFile + ' : ' + err);
-                    dfd.resolve();
-                });
-                return dfd.promise;
-            }).done(function() {
-                cb();
-            });
-        });
+        /*var self = this;
+         this.pathToImages = 'data/' + this.id + '/';
+         fs.mkdir(this.pathToImages, function(err) {
+         if(err)
+         console.log('Impossible de creer le repertoire : ' + err);
+         deferred.map(self.arrayOfImages, function(oldFile) {
+         var dfd = deferred();
+         fs.rename('site_demo/server/php/files/' + path.basename(oldFile), self.pathToImages + path.basename(oldFile), function(err) {
+         if(err)
+         console.log('Impossible de deplacer le fichier ' + oldFile + ' : ' + err);
+         dfd.resolve();
+         });
+         return dfd.promise;
+         }).done(function() {
+         cb();
+         });
+         });*/
+        cb();
     },
     /**
      * Met le traitement en pause
@@ -335,7 +329,7 @@ var VisualSFM = inherit({
          * On sauvegarde le contexte dans une variable, car dès qu'on entre dans une nouvelle fonction, le contexte (this) change et on perdrait l'accès aux propriétés/méthodes de l'instance de VisualSFM
          */
         var self = this;
-        var port = 9999;
+        var port = globalPort++;
         this.vsfmProcess = spawn('VisualSFM', ['listen+log', port]);
         this.vsfmProcess.stdout.on('data', function(data) {
             console.log('[STDOUT] ' + data);
@@ -350,28 +344,25 @@ var VisualSFM = inherit({
          * On laisse un peu de temps à VisualSFM pour se lancer.
          * Pendant ce temps là, on créé l'enregistrement en BDD et on réunit tous les fichiers dans un même dossier
          */
-        this.createDBRecord(function() {
-            self.imagesIntoDir(function() {
-                setTimeout(function() {
-                    // manière moche de s'assurer que VisualSFM soit bien prêt et en train d'écouter sur le port donné avant de s'y connecter.
-                    self.vsfmSocket = net.connect({port: port}, function() {
-                        self.runNextStep();
-                        readline.createInterface(self.vsfmSocket, self.vsfmSocket).on('line', function(line) {
-                            console.log('[LINE] ' + line);
-                            if(!self.currentStep.processLine(line)) {
-                                // processLine renvoie false si l'étape est terminée et qu'il faut passer à la suivante
-                                self.runNextStep();
-                            }
-                        });
+        self.imagesIntoDir(function() {
+            setTimeout(function() {
+                // manière moche de s'assurer que VisualSFM soit bien prêt et en train d'écouter sur le port donné avant de s'y connecter.
+                self.vsfmSocket = net.connect({port: port}, function() {
+                    self.runNextStep();
+                    readline.createInterface(self.vsfmSocket, self.vsfmSocket).on('line', function(line) {
+                        console.log('[LINE] ' + line);
+                        if(!self.currentStep.processLine(line)) {
+                            // processLine renvoie false si l'étape est terminée et qu'il faut passer à la suivante
+                            self.runNextStep();
+                        }
                     });
-                    /*
-                     * La fonction associée à l'évènement est appelée avec un contexte propre à cet évènement par défaut.
-                     * On change ce comportement grâce à bind, le this représentera dès à présent l'instance de l'objet.
-                     */
-                    self.vsfmSocket.on('error', self.vsfmSocketError.bind(self));
-                }, 2000);
-            });
-
+                });
+                /*
+                 * La fonction associée à l'évènement est appelée avec un contexte propre à cet évènement par défaut.
+                 * On change ce comportement grâce à bind, le this représentera dès à présent l'instance de l'objet.
+                 */
+                self.vsfmSocket.on('error', self.vsfmSocketError.bind(self));
+            }, 2000);
         });
     },
     runNextStep: function() {
@@ -390,9 +381,13 @@ var VisualSFM = inherit({
     },
     setState: function(state) {
         if(state != this.state) {
+            pool.query('UPDATE model3d SET state=? WHERE id=?', [state, this.id], function(err) {
+                if(err)
+                    throw err;
+            });
             this.state = state;
             var stateObject = {
-                type: '_progress-state',
+                type: 'progress-state',
                 state: state
             };
             this.sendMessage(stateObject);
@@ -400,7 +395,7 @@ var VisualSFM = inherit({
     },
     updateProgress: function(newProgress) {
         var progressObject = {
-            type: '_progress-update',
+            type: 'progress-update',
             currentStepNb: this.currentStepIndex + 1,
             totalStepNb: this.__self.tabCommands.length,
             currentStepName: this.currentStep.getName(),
@@ -426,7 +421,7 @@ var VisualSFM = inherit({
         if(!err.recoverable) {
             console.log('pausing');
             var errorObject = {
-                type: '_progress-error',
+                type: 'progress-error',
                 message: err.message
             };
             this.sendMessage(errorObject);
@@ -455,11 +450,33 @@ var VisualSFM = inherit({
         StepReconstructionSparse,
         StepReconstructionDense
     ],
-    WAITING: 0,
-    RUNNING: 1,
-    PAUSED: 2,
-    DONE: 3
+    INIT: 0,
+    QUEUED: 1,
+    RUNNING: 2,
+    PAUSED: 3,
+    DONE: 4,
+    CANCELED: 5
 });
+
+function checkForWaiting() {
+    //SELECT m.id FROM process p LEFT JOIN model3d m ON p.model3d_id=m.id WHERE m.order=1 AND (m.state=0 OR m.state=3) AND p.priority=(SELECT MIN(priority) FROM process p2 WHERE p2.id=p.model3d_id GROUP BY p2.model3d_id) GROUP BY p.model3d_id
+    pool.query('SELECT m.id AS model_id, p.id AS process_id, m.membres_id AS membres_id FROM process p LEFT JOIN model3d m ON p.model3d_id=m.id WHERE m.order=1 AND (m.state=0 OR m.state=3)', function(err, rows) {
+        if(err)
+            throw err;
+        rows.forEach(function(row) {
+            pool.query('UPDATE model3d SET state=? WHERE id=?', [VisualSFM.QUEUED, row['model_id']], function(err) {
+                if(err)
+                    throw err;
+            });
+            var vs = new VisualSFM(row['model_id'], row['process_id'], row['membres_id']);
+            vs.run();
+        })
+        setTimeout(function() {
+            checkForWaiting();
+        }, 5000);
+    });
+}
+checkForWaiting();
 
 /*var vs = new VisualSFM('data\\GreatWall_full\\');
  vs.run();*/
@@ -491,6 +508,15 @@ function originIsAllowed(origin) {
     return true;
 }
 
+var listener = {};
+function sendTo(membres_id, message) {
+    if(listener.hasOwnProperty(membres_id)) {
+        listener[membres_id].forEach(function(con) {
+            con.sendUTF(JSON.stringify(message));
+        });
+    }
+}
+
 wsServer.on('request', function(request) {
     if(!originIsAllowed(request.origin)) {
         // On rejette les connexions depuis des origines inconnues
@@ -500,26 +526,22 @@ wsServer.on('request', function(request) {
     }
 
     var connection = request.accept(null, request.origin);
-    var vs;
     console.log((new Date()) + ' Connection accepted.');
     connection.on('message', function(message) {
         if(message.type === 'utf8') {
             var messageData = JSON.parse(message.utf8Data);
-            connection.socketId = messageData.socketId;
-            if(messageData.action == 'vsfm-new') {
-                vs = new VisualSFM(messageData.images);
-                vs.addListener(connection);
-                vs.run();
-                // TODO: client can create several VisualSFM instances
-                // remember them all to removeListener in the end
+            if(messageData.action == 'login') {
+                connection.user_id = messageData.user_id;
+                if(listener.hasOwnProperty(messageData.user_id)) {
+                    listener[messageData.user_id].push(connection);
+                }
+                else
+                    listener[messageData.user_id] = [connection];
             }
-            //connection.sendUTF(message.utf8Data);
-
         }
     });
     connection.on('close', function(reasonCode, description) {
-        if(vs)
-            vs.removeListener(connection);
+        listener[connection.user_id].splice(listener[connection.user_id].indexOf(connection), 1);
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 });
