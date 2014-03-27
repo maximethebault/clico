@@ -5,7 +5,7 @@ window.cnpao = window.cnpao || {};
  */
 window.cnpao.ProgressManager = inherit({
     initProgressManager: function() {
-        console.log('add progrezss');
+        console.log('add progress');
         this.totalStepNb = 0;
         this.currentStepNb = 0;
         this.currentStepName = '';
