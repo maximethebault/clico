@@ -1,6 +1,6 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
-window.cnpao.Param = inherit({
+window.cnpao.Model.Param = inherit({
     __constructor: function(id, name, value) {
         this.__base();
         this.id = id;

@@ -228,25 +228,24 @@ session_start();
         <script src="js/node.js"></script>
         <script src="js/Socket.js"></script>
         <script src="js/ProgressManager.js"></script>
-        <script src="js/model/Model3d.js"></script>
-        <script src="js/model/Process.js"></script>
-        <script src="js/model/SFM.js"></script>
-        <script src="js/view/model3d.js"></script>
+        <script src="js/model/Model3d.model.js"></script>
+        <script src="js/model/Process.model.js"></script>
+        <script src="js/model/SFM.model.js"></script>
+        <script src="js/view/Model3d.view.js"></script>
 
         <script>
-            $(document)
-            .on('change', '.btn-file :file', function() {
-            var input = $(this),
-            numFiles = input.get(0).files ? input.get(0).files.length : 1,
-            label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-            input.trigger('fileselect', [numFiles, label]);
+            $(document).on('change', '.btn-file :file', function() {
+                var input = $(this);
+                var numFiles = input.get(0).files ? input.get(0).files.length : 1;
+                var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+                input.trigger('fileselect', [numFiles, label]);
             });
 
-            $(document).ready( function() {
-            $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
-            console.log(numFiles);
-            console.log(label);
-            });
+            $(document).ready(function() {
+                $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
+                    console.log(numFiles);
+                    console.log(label);
+                });
             });
         </script>
     </body>

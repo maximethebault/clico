@@ -1,4 +1,4 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 /**
  * Moyen d'obtenir un identifiant unique, se basant sur le temps

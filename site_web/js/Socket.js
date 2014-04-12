@@ -1,4 +1,4 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 function getUniqueTime() {
     var time = new Date().getTime();

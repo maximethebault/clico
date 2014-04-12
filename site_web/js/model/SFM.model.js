@@ -1,6 +1,6 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
-window.cnpao.SFM = inherit(window.cnpao.Process, {
+window.cnpao.Model.SFM = inherit(window.cnpao.Model.Process, {
     __constructor: function() {
         this.__base();
         // la SFM est le premier Process qui doit être éxécuté

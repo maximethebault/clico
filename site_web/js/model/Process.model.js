@@ -1,4 +1,4 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 /**
  * Array.map existe en JS, mais pas Object.map... D'où cette fonction
@@ -15,12 +15,12 @@ function mapObject(obj, callback) {
 /**
  * Classe abstraite
  */
-window.cnpao.Process = inherit([window.cnpao.ProgressManager], {
+window.cnpao.Model.Process = inherit([window.cnpao.ProgressManager], {
     __constructor: function() {
         this.initProgressManager();
         this.model3d_id = 0;
         this.priority = 0;
-        this.order = window.cnpao.Model3d.RUN;
+        this.order = window.cnpao.Model.Model3d.RUN;
         this.params = {};
         //$(this).on('_record-id', this.setRecordId);
     },

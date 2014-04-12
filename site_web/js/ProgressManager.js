@@ -1,4 +1,4 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 /**
  * Classe s'occupant de gérer la progression d'un processus découpé en étapes

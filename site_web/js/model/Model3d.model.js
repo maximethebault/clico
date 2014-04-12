@@ -1,9 +1,9 @@
-window.cnpao = window.cnpao || {};
+window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 /**
  * Classe représentant l'ensemble du processus de génération de modèle 3D
  */
-window.cnpao.Model3d = inherit({
+window.cnpao.Model.Model3d = inherit({
     __constructor: function() {
         this.id = 0;
         this.name = '';
