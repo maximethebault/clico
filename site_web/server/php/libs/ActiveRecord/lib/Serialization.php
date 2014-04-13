@@ -171,7 +171,7 @@ abstract class Serialization
                     if(!is_array($assoc)) {
                         if($assoc != null) {
                             $serialized = new $serializer_class($assoc, $options);
-                            $this->attributes[($options['alias'] ? $options['alias'] : $association)] = $serialized->to_a();
+                            $this->attributes[(array_key_exists('alias', $options) ? $options['alias'] : $association)] = $serialized->to_a();
                         }
                     }
                     else {
@@ -186,7 +186,7 @@ abstract class Serialization
                                 $includes[] = $serialized->to_a();
                         }
 
-                        $this->attributes[($options['alias'] ? $options['alias'] : $association)] = $includes;
+                        $this->attributes[(array_key_exists('alias', $options) ? $options['alias'] : $association)] = $includes;
                     }
                 }
                 catch(UndefinedPropertyException $e) {

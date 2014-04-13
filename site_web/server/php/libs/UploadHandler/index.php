@@ -1,4 +1,5 @@
 <?php
+
 /*
  * jQuery File Upload Plugin PHP Example 5.14
  * https://github.com/blueimp/jQuery-File-Upload
@@ -34,16 +35,31 @@ require_once '../loadActiveRecord.php';
 // TODO: vérifier si l'utilisateur a bien les droits sur ce modèle !
 $modelDataPath = 'data/' . intval($_REQUEST['mid']) . '/';
 @mkdir($modelDataPath, 0777);
+if(array_key_exists('file', $_GET)) {
+    $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['mid']), $modelDataPath . $_GET['file'])));
+    if($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+        if($file)
+            $file->delete();
+        else
+            die;
+    }
+}
 $upload_handler = new UploadHandler(array('upload_dir' => '../../../../../' . $modelDataPath, 'upload_url' => '../' . $modelDataPath, 'script_url' => get_full_url() . '/?mid=' . intval($_REQUEST['mid'])));
 if($filePath = $upload_handler->getFileResult()) {
-    if($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+    if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['mid']), $modelDataPath . $filePath)));
-        $file->delete();
-    }
-    elseif($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $file = new File();
-        $file->model3d_id = intval($_REQUEST['mid']);
-        $file->path = $modelDataPath . $filePath;
-        $file->save();
+        if(!$file) {
+            $file = new File();
+            $file->model3d_id = intval($_REQUEST['mid']);
+            $file->path = $modelDataPath . $filePath;
+            $file->incomplete = $upload_handler->getFileIncomplete();
+            $file->size = $upload_handler->getFileSize();
+            $file->save();
+        }
+        elseif($file && $file->incomplete) {
+            $file->incomplete = $upload_handler->getFileIncomplete();
+            $file->size = $upload_handler->getFileSize();
+            $file->save();
+        }
     }
 }

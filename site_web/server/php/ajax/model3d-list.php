@@ -12,5 +12,5 @@ if(!intval($_SESSION['id']))
 $model3ds = Model3d::all(array('order' => 'id ASC', 'conditions' => array('membres_id=?', intval($_SESSION['id']))));
 echo '[' . implode(',', array_map(
                 function($model3d) {
-            return $model3d->to_json();
+            return $model3d->to_json(array('include' => array('files' => array('only' => array('size'), 'methods' => array('name', 'url', 'thumbnailUrl', 'deleteUrl', 'deleteType')), 'processes' => array('include' => array('params')))));
         }, $model3ds)) . ']';

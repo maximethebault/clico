@@ -9,18 +9,38 @@ window.cnpao.View.Model3d = inherit({
         $('.fileupload', this.$el).fileupload({
             url: 'server/php/libs/UploadHandler/',
             // lorsqu'on uploadera un fichier, on enverra avec l'ID du Model3d associé au fichier
-            formData: {mid: model.id}
+            formData: {mid: model.id},
+            maxChunkSize: 5000000, // 5 MB
+            add: function(e, data) {
+                var that = this;
+                $.getJSON('server/php/libs/UploadHandler/', {file: data.files[0].name, mid: model.id}, function(result) {
+                    var file = result.file;
+                    data.uploadedBytes = file && file.size;
+                    $.blueimp.fileupload.prototype
+                            .options.add.call(that, e, data);
+                });
+            }
         });
+        $('.fileupload', this.$el).fileupload('option', 'done').call($('.fileupload', this.$el), $.Event('done'), {result: {files: this.model.files}});
         this.bindEvents();
     },
     bindEvents: function() {
         $('.delete-model3d', this.$el).on('click', this.deleteModel.bind(this));
         $('.generate', this.$el).on('click', this.generate.bind(this));
     },
+    unbindEvents: function() {
+        $('.delete-model3d', this.$el).off('click');
+        $('.generate', this.$el).off('click');
+    },
     deleteModel: function() {
         this.model.del(function(err) {
-            if(err == 0)
+            if(err == 0) {
                 this.$el.remove();
+                this.unbindEvents();
+            }
+            else {
+                //TODO: échec lors de la suppression du modèle, gérer l'erreur
+            }
         }.bind(this));
     },
     generate: function(e) {
@@ -52,6 +72,17 @@ window.cnpao.View.Model3d = inherit({
         var model = new window.cnpao.Model.Model3d();
         model.create(function() {
             new window.cnpao.View.Model3d(model);
+        });
+    },
+    loadView: function() {
+        window.cnpao.Model.Model3d.loadAjax(function(err, models) {
+            if(err) {
+                // TODO: afficher un message d'erreur si le chargement a échoué
+                return;
+            }
+            _.forEach(models, function(model) {
+                new window.cnpao.View.Model3d(model);
+            });
         });
     }
 });

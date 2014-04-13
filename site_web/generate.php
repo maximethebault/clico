@@ -4,10 +4,7 @@ session_start();
 <!DOCTYPE html>
 <html>
     <?php include("header.php"); ?>
-    <link rel="stylesheet" href="FileUpload/css/jquery.fileupload.css" type="text/css">
-    <link rel="stylesheet" href="FileUpload/css/jquery.fileupload-ui.css" type="text/css">
     <body>
-
         <div id="hc_bloc_page">
             <div id="hc_header">
             </div>
@@ -190,16 +187,16 @@ session_start();
             </div>
         </script>
 
-
+        <script src="js/underscore.js"></script>
         <script src="FileUpload/js/vendor/jquery.ui.widget.js"></script>
         <!-- The Templates plugin is included to render the upload/download listings -->
-        <script src="http://blueimp.github.io/JavaScript-Templates/js/tmpl.min.js"></script>
+        <script src="FileUpload/js/tmpl.min.js"></script>
         <!-- The Load Image plugin is included for the preview images and image resizing functionality -->
-        <script src="http://blueimp.github.io/JavaScript-Load-Image/js/load-image.min.js"></script>
+        <script src="FileUpload/js/load-image.min.js"></script>
         <!-- The Canvas to Blob plugin is included for image resizing functionality -->
-        <script src="http://blueimp.github.io/JavaScript-Canvas-to-Blob/js/canvas-to-blob.min.js"></script>
+        <script src="FileUpload/js/canvas-to-blob.min.js"></script>
         <!-- blueimp Gallery script -->
-        <script src="http://blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js"></script>
+        <script src="FileUpload/js/jquery.blueimp-gallery.min.js"></script>
         <!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
         <script src="FileUpload/js/jquery.iframe-transport.js"></script>
         <!-- The basic File Upload plugin -->
@@ -231,9 +228,11 @@ session_start();
         <script src="js/model/Model3d.model.js"></script>
         <script src="js/model/Process.model.js"></script>
         <script src="js/model/SFM.model.js"></script>
+        <script src="js/model/Param.model.js"></script>
         <script src="js/view/Model3d.view.js"></script>
 
         <script>
+            // TODO: dans jQuery File Uploader, arrêter TOUTE prise en charge de thumbnail pour les photos uploadées
             $(document).on('change', '.btn-file :file', function() {
                 var input = $(this);
                 var numFiles = input.get(0).files ? input.get(0).files.length : 1;
@@ -246,6 +245,7 @@ session_start();
                     console.log(numFiles);
                     console.log(label);
                 });
+                window.cnpao.View.Model3d.loadView();
             });
         </script>
     </body>

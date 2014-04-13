@@ -1,11 +1,10 @@
 window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 window.cnpao.Model.Param = inherit({
-    __constructor: function(id, name, value) {
-        this.__base();
-        this.id = id;
-        this.name = name;
-        this.value = value;
+    __constructor: function(attrs) {
+        this.id = (attrs && attrs.id) ? attrs.id : 0;
+        this.name = (attrs && attrs.name) ? attrs.name : '';
+        this.value = (attrs && attrs.value) ? attrs.value : '';
     },
     setValue: function(value) {
         var self = this;
@@ -28,5 +27,12 @@ window.cnpao.Model.Param = inherit({
             name: this.name,
             value: this.value
         };
+    }
+},
+{
+    loadModels: function(models) {
+        return _.map(models, function(param) {
+            return new window.cnpao.Model.Param(param);
+        });
     }
 });

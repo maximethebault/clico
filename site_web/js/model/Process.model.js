@@ -1,20 +1,5 @@
 window.cnpao = window.cnpao || {Model: {}, View: {}};
 
-/**
- * Array.map existe en JS, mais pas Object.map... D'où cette fonction
- */
-function mapObject(obj, callback) {
-    var result = {};
-    Object.keys(obj).forEach(function (key) {
-        result[key] = callback.call(obj, obj[key], key, obj);
-    });
-    return result;
-}
-
-
-/**
- * Classe abstraite
- */
 window.cnpao.Model.Process = inherit([window.cnpao.ProgressManager], {
     __constructor: function() {
         this.initProgressManager();
@@ -59,9 +44,18 @@ window.cnpao.Model.Process = inherit([window.cnpao.ProgressManager], {
             model3d_id: this.model3d_id,
             order: this.order,
             priority: this.priority,
-            params: mapObject(this.params, function(param) {
+            params: _.map(this.params, function(param) {
                 return param.toJSON();
             })
         };
+    }
+},
+{
+    loadModels: function(models) {
+        return _.map(models, function(process) {
+            if(process.params)
+                process.params = window.cnpao.Model.Param.loadModels(process.params);
+            return new window.cnpao.Model.Process(process);
+        });
     }
 });
