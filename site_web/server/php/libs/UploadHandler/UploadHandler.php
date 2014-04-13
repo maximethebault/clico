@@ -1,5 +1,8 @@
 <?php
 
+// TODO: dans ce script, arrêter TOUTE prise en charge de thumbnail pour les photos uploadées
+// TODO: bloquer l'upload de .php et autres, faire une whitelist sous forme d'Array avec les formats autorisés (pour l'instant, jpeg, jpg, png, ply, obj)
+
 /*
  * jQuery File Upload Plugin PHP Class 7.1.4
  * https://github.com/blueimp/jQuery-File-Upload

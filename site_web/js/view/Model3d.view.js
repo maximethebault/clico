@@ -10,6 +10,18 @@ window.cnpao.View.Model3d = inherit({
             url: 'server/php/libs/UploadHandler/',
             // lorsqu'on uploadera un fichier, on enverra avec l'ID du Model3d associé au fichier
             formData: {mid: model.id},
+            dropZone: $('.fileupload', this.$el),
+            disableImagePreview: true,
+            disableImageLoad: true,
+            disableImageHead: true,
+            disableExif: true,
+            disableExifThumbnail: true,
+            disableExifSub: true,
+            disableExifGps: true,
+            disableImageMetaDataLoad: true,
+            disableImageMetaDataSave: true,
+            disableAudioPreview: true,
+            disableVideoPreview: true,
             maxChunkSize: 5000000, // 5 MB
             add: function(e, data) {
                 var that = this;

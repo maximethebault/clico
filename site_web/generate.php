@@ -232,7 +232,6 @@ session_start();
         <script src="js/view/Model3d.view.js"></script>
 
         <script>
-            // TODO: dans jQuery File Uploader, arrêter TOUTE prise en charge de thumbnail pour les photos uploadées
             $(document).on('change', '.btn-file :file', function() {
                 var input = $(this);
                 var numFiles = input.get(0).files ? input.get(0).files.length : 1;
