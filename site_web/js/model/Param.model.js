@@ -6,6 +6,21 @@ window.cnpao.Model.Param = inherit({
         this.name = (attrs && attrs.name) ? attrs.name : '';
         this.value = (attrs && attrs.value) ? attrs.value : '';
     },
+    create: function(model3d_id, cb) {
+        var self = this;
+        var obj = this.toJSON();
+        obj['model3d_id'] = model3d_id;
+        $.ajax({
+            url: 'server/php/ajax/param-new.php',
+            type: 'POST',
+            data: obj
+        }).done(function(result) {
+            var resParsed = JSON.parse(result);
+            self.id = resParsed.id;
+            if(cb)
+                cb();
+        });
+    },
     setValue: function(value) {
         var self = this;
         this.value = value;
@@ -17,7 +32,7 @@ window.cnpao.Model.Param = inherit({
                 data: {id: self.id, value: value}
             }).done(function(result) {
                 var resParsed = JSON.parse(result);
-                if(resParsed.error != 0)
+                if(resParsed.hasOwnProperty('error') && resParsed.error != 0)
                     alert(resParsed.message);
             });
         }
@@ -31,8 +46,10 @@ window.cnpao.Model.Param = inherit({
 },
 {
     loadModels: function(models) {
-        return _.map(models, function(param) {
-            return new window.cnpao.Model.Param(param);
+        var obj = {};
+        _.forEach(models, function(param) {
+            obj[param.name] = new window.cnpao.Model.Param(param);
         });
+        return obj;
     }
 });

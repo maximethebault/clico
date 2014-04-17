@@ -6,14 +6,13 @@ if(!array_key_exists('id', $_SESSION))
 require_once '../../../config.php';
 require_once '../libs/loadActiveRecord.php';
 
-$param = Param::find(intval($_GET['id']));
-$process = Process::find(intval($_POST['process_id']));
-if($process->model3d->membres_id == $_SESSION['id']) {
+$param = Param::find(intval($_REQUEST['id']));
+if($param->model3d->membres_id == $_SESSION['id']) {
     if(array_key_exists('name', $_POST))
         $param->name = $_POST['name'];
     if(array_key_exists('value', $_POST))
         $param->value = $_POST['value'];
-    $param->update();
+    $param->save();
     echo $param->to_json();
 }
 else {

@@ -36,6 +36,9 @@ session_start();
                             <i class="glyphicon glyphicon-cloud-upload"></i>
                             <span>Ajouter un nouveau modèle 3D</span>
                         </button>
+                        <div id="photos_in">
+                            
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,6 +124,10 @@ session_start();
             {% } %}
         </script>
 
+        <script id="template-params" type="text/x-tmpl">
+            Paramètre de test : <input type="text" class="param" value="{% if (o.test) { %} {%=o.test.value%} {% } %}" data-name="test">
+        </script>
+
         <!-- The template to display the upload form -->
         <script id="template-uploader" type="text/x-tmpl">
             <div data-id="{%=o.id%}" class="uploader">
@@ -139,11 +146,18 @@ session_start();
             <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
             <div class="row fileupload-buttonbar">
             <div class="col-lg-10">
+            <button type="button" class="btn btn-info generate">
+            <i class="glyphicon glyphicon-cloud-upload"></i>
+            <span>Générer modèle 3D</span>
+            </button>
             <button type="button" class="btn btn-danger delete-model3d">
             <i class="glyphicon glyphicon-trash"></i>
             <span>Supprimer le modèle 3D</span>
             </button>
-            </div>
+            </div><br><br><br>
+            <div class="col-lg-10 params">
+            
+            </div><br><br><br><br>
             <div class="col-lg-10">
             <!-- The fileinput-button span is used to style the file input field as button -->
             <span class="btn btn-success fileinput-button">
@@ -154,10 +168,6 @@ session_start();
             <button type="submit" class="btn btn-primary start">
             <i class="glyphicon glyphicon-upload"></i>
             <span>Démarrer l'envoi</span>
-            </button>
-            <button type="button" class="btn btn-info generate">
-            <i class="glyphicon glyphicon-cloud-upload"></i>
-            <span>Générer modèle 3D</span>
             </button>
             <button type="reset" class="btn btn-warning cancel">
             <i class="glyphicon glyphicon-ban-circle"></i>
@@ -213,12 +223,9 @@ session_start();
         <script src="FileUpload/js/jquery.fileupload-validate.js"></script>
         <!-- The File Upload user interface plugin -->
         <script src="FileUpload/js/jquery.fileupload-ui.js"></script>
-        <!-- The main application script
-        <script src="FileUpload/js/main.js"></script>
-        // TODO: ré-implémenter les mêmes fonctionnalités : charger les fichiers déjà uploadés
-        -->
+
         <script>
-            window.user_id = <?php echo intval($_SESSION['id']); ?>;
+window.user_id = <?php echo intval($_SESSION['id']); ?>;
         </script>
 
         <script src="js/inherit.js"></script>
@@ -229,23 +236,24 @@ session_start();
         <script src="js/model/Process.model.js"></script>
         <script src="js/model/SFM.model.js"></script>
         <script src="js/model/Param.model.js"></script>
+        <script src="js/view/Params.view.js"></script>
         <script src="js/view/Model3d.view.js"></script>
 
         <script>
-            $(document).on('change', '.btn-file :file', function() {
-                var input = $(this);
-                var numFiles = input.get(0).files ? input.get(0).files.length : 1;
-                var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-                input.trigger('fileselect', [numFiles, label]);
-            });
+$(document).on('change', '.btn-file :file', function() {
+    var input = $(this);
+    var numFiles = input.get(0).files ? input.get(0).files.length : 1;
+    var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+    input.trigger('fileselect', [numFiles, label]);
+});
 
-            $(document).ready(function() {
-                $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
-                    console.log(numFiles);
-                    console.log(label);
-                });
-                window.cnpao.View.Model3d.loadView();
-            });
+$(document).ready(function() {
+    $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
+        console.log(numFiles);
+        console.log(label);
+    });
+    window.cnpao.View.Model3d.loadView();
+});
         </script>
     </body>
 </html>

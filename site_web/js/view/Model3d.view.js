@@ -3,7 +3,7 @@ window.cnpao = window.cnpao || {Model: {}, View: {}};
 window.cnpao.View.Model3d = inherit({
     __constructor: function(model) {
         this.model = model;
-        $('#photos').prepend(tmpl("template-uploader", {id: model.id}));
+        $('#photos_in').prepend(tmpl("template-uploader", {id: model.id}));
         // on met un dollar devant le nom de la variable pour mettre en valeur le fait qu'elle est passée par jQuery
         this.$el = $('.uploader[data-id=' + model.id + ']');
         $('.fileupload', this.$el).fileupload({
@@ -35,6 +35,8 @@ window.cnpao.View.Model3d = inherit({
         });
         $('.fileupload', this.$el).fileupload('option', 'done').call($('.fileupload', this.$el), $.Event('done'), {result: {files: this.model.files}});
         this.bindEvents();
+        
+        this.params = new window.cnpao.View.Params(this.model.params, this);
     },
     bindEvents: function() {
         $('.delete-model3d', this.$el).on('click', this.deleteModel.bind(this));

@@ -16,17 +16,7 @@ $process->model3d_id = intval($_POST['model3d_id']);
 $model3d = Model3d::find(intval($_POST['model3d_id']));
 if($model3d->membres_id == $_SESSION['id']) {
     $process->save();
-    $process_id = $process->id;
-    if(array_key_exists('params', $_POST)) {
-        foreach($_POST['params'] as $paramRaw) {
-            $param = new Param();
-            $param->process_id = $process_id;
-            $param->name = $paramRaw['name'];
-            $param->value = $paramRaw['value'];
-            $param->save();
-        }
-    }
-    echo $process->to_json(array('include' => 'params'));
+    echo $process->to_json();
 }
 else {
     die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));

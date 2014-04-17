@@ -9,6 +9,7 @@ window.cnpao.Model.Model3d = inherit({
         this.name = (attrs && attrs.name) ? attrs.name : '';
         this.order = (attrs && attrs.order) ? attrs.order : this.__self.PAUSE;
         this.processes = (attrs && attrs.processes) ? attrs.processes : [];
+        this.params = (attrs && attrs.params) ? attrs.params : {};
         // Contrairement aux précédents, le champ suivant n'est pas mis à jour suivant les interactions de l'utilisateur
         // cette partie est gérée par jQuery File Uploader, et le champ est présent juste pour assurer le chargement de la vue du model3d
         this.files = (attrs && attrs.files) ? attrs.files : [];
@@ -44,6 +45,7 @@ window.cnpao.Model.Model3d = inherit({
         });
     },
     launch: function() {
+        var self = this;
         this.order = this.__self.RUN;
         $.ajax({
             url: 'server/php/ajax/model3d-update.php',
@@ -61,10 +63,14 @@ window.cnpao.Model.Model3d = inherit({
             name: this.name,
             order: this.order
         };
-        if(recursive)
-            obj['processes'] = this.processes.map(function(process) {
+        if(recursive) {
+            obj['processes'] = _.map(this.processes, function(process) {
                 return process.toJSON();
             });
+            obj['params'] = _.map(this.params, function(param) {
+                return param.toJSON();
+            });
+        }
         return obj;
     }
 },
@@ -88,6 +94,8 @@ window.cnpao.Model.Model3d = inherit({
         return _.map(models, function(model3d) {
             if(model3d.processes)
                 model3d.processes = window.cnpao.Model.Process.loadModels(model3d.processes);
+            if(model3d.params)
+                model3d.params = window.cnpao.Model.Param.loadModels(model3d.params);
             return new window.cnpao.Model.Model3d(model3d);
         }, this);
     }

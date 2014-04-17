@@ -7,11 +7,11 @@ require_once '../../../config.php';
 require_once '../libs/loadActiveRecord.php';
 
 $param = new Param();
-$param->process_id = $_POST['process_id'];
+$param->model3d_id = $_POST['model3d_id'];
 $param->name = $_POST['name'];
 $param->value = $_POST['value'];
-$process = Process::find(intval($_POST['process_id']));
-if($process->model3d->membres_id == $_SESSION['id']) {
+$model3d = Model3d::find(intval($_POST['model3d_id']));
+if($model3d->membres_id == $_SESSION['id']) {
     $param->save();
     echo $param->to_json();
 }
