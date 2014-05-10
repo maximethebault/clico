@@ -37,7 +37,7 @@ session_start();
                             <span>Ajouter un nouveau modèle 3D</span>
                         </button>
                         <div id="photos_in">
-                            
+
                         </div>
                     </div>
                 </div>
@@ -156,14 +156,14 @@ session_start();
             </button>
             </div><br><br><br>
             <div class="col-lg-10 params">
-            
+
             </div><br><br><br><br>
             <div class="col-lg-10">
             <!-- The fileinput-button span is used to style the file input field as button -->
             <span class="btn btn-success fileinput-button">
             <i class="glyphicon glyphicon-plus"></i>
             <span>Ajouter des fichiers...</span>
-            <input type="file" name="files[]" multiple>
+            <input type="file" name="files[]" multiple accept=".ply,image/*">
             </span>
             <button type="submit" class="btn btn-primary start">
             <i class="glyphicon glyphicon-upload"></i>
