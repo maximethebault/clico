@@ -465,8 +465,8 @@ var VisualSFM = inherit({
 });
 
 function checkForWaiting() {
-    //SELECT m.id FROM process p LEFT JOIN model3d m ON p.model3d_id=m.id WHERE m.order=1 AND (m.state=0 OR m.state=3) AND p.priority=(SELECT MIN(priority) FROM process p2 WHERE p2.id=p.model3d_id GROUP BY p2.model3d_id) GROUP BY p.model3d_id
-    pool.query('SELECT m.id AS model_id, p.id AS process_id, m.membres_id AS membres_id FROM process p LEFT JOIN model3d m ON p.model3d_id=m.id WHERE m.order=1 AND (m.state=0 OR m.state=3)', function(err, rows) {
+    //SELECT m.id FROM process p LEFT JOIN model3d m ON p.model3d_id=m.id WHERE m.command=1 AND (m.state=0 OR m.state=3) AND p.priority=(SELECT MIN(priority) FROM process p2 WHERE p2.id=p.model3d_id GROUP BY p2.model3d_id) GROUP BY p.model3d_id
+    pool.query('SELECT m.id AS model_id, p.id AS process_id, m.membres_id AS membres_id FROM process p LEFT JOIN model3d m ON p.model3d_id=m.id WHERE m.command=1 AND (m.state=0 OR m.state=3)', function(err, rows) {
         if(err)
             throw err;
         rows.forEach(function(row) {
