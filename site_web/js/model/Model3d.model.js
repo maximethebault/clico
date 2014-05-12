@@ -7,7 +7,7 @@ window.cnpao.Model.Model3d = inherit({
     __constructor: function(attrs) {
         this.id = (attrs && attrs.id) ? attrs.id : 0;
         this.name = (attrs && attrs.name) ? attrs.name : '';
-        this.order = (attrs && attrs.order) ? attrs.order : this.__self.PAUSE;
+        this.command = (attrs && attrs.command) ? attrs.command : this.__self.PAUSE;
         this.processes = (attrs && attrs.processes) ? attrs.processes : [];
         this.params = (attrs && attrs.params) ? attrs.params : {};
         // Contrairement aux précédents, le champ suivant n'est pas mis à jour suivant les interactions de l'utilisateur
@@ -46,7 +46,7 @@ window.cnpao.Model.Model3d = inherit({
     },
     launch: function() {
         var self = this;
-        this.order = this.__self.RUN;
+        this.command = this.__self.RUN;
         $.ajax({
             url: 'server/php/ajax/model3d-update.php',
             type: 'POST',
@@ -61,7 +61,7 @@ window.cnpao.Model.Model3d = inherit({
         var obj = {
             id: this.id,
             name: this.name,
-            order: this.order
+            command: this.command
         };
         if(recursive) {
             obj['processes'] = _.map(this.processes, function(process) {

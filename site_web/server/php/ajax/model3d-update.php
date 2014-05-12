@@ -1,4 +1,5 @@
 <?php
+
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 session_start();
 if(!array_key_exists('id', $_SESSION))
@@ -10,8 +11,8 @@ $model3d = Model3d::find(intval($_REQUEST['id']));
 if($model3d->membres_id == $_SESSION['id']) {
     if(array_key_exists('name', $_POST))
         $model3d->name = $_POST['name'];
-    if(array_key_exists('order', $_POST))
-        $model3d->order = $_POST['order'];
+    if(array_key_exists('command', $_POST))
+        $model3d->command = $_POST['command'];
     $model3d->save();
     if(array_key_exists('params', $_POST)) {
         foreach($_POST['params'] as $paramRaw) {

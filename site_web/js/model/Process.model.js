@@ -5,7 +5,7 @@ window.cnpao.Model.Process = inherit([window.cnpao.ProgressManager], {
         this.initProgressManager();
         this.model3d_id = 0;
         this.priority = 0;
-        this.order = window.cnpao.Model.Model3d.RUN;
+        this.command = window.cnpao.Model.Model3d.RUN;
         //$(this).on('_record-id', this.setRecordId);
     },
     launch: function() {
@@ -30,7 +30,7 @@ window.cnpao.Model.Process = inherit([window.cnpao.ProgressManager], {
         return {
             name: this.name,
             model3d_id: this.model3d_id,
-            order: this.order,
+            command: this.command,
             priority: this.priority
         };
     }
