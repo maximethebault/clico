@@ -1,0 +1,9 @@
+<!DOCTYPE FilterScript>
+<FilterScript>
+ <filter name="Compute normals for point sets">
+  <Param description="Neighbour num" value="1000" type="RichInt" name="K" tooltip="The number of neighbors used to estimate normals."/>
+  <Param description="Smooth Iteration" value="0" type="RichInt" name="smoothIter" tooltip="The number of smoothing iteration done on the p used to estimate and propagate normals."/>
+  <Param description="Flip normals w.r.t. viewpoint" value="true" type="RichBool" name="flipFlag" tooltip="If the 'viewpoint' (i.e. scanner position) is known, it can be used to disambiguate normals orientation, so that all the normals will be oriented in the same direction."/>
+  <Param description="Viewpoint Pos." type="RichPoint3f" name="viewPos" x="0" y="0" z="0" tooltip="The viewpoint position can be set by hand (i.e. getting the current viewpoint) or it can be retrieved from mesh camera, if the viewpoint position is stored there."/>
+ </filter>
+</FilterScript>

@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once 'config.php';
+require 'server/php/libs/loadActiveRecord.php'
 ?>
 <!DOCTYPE html>
 <html>
@@ -16,6 +18,18 @@ session_start();
                 </ul>
 
                 <div class="tab-content">
+                    <div class="model3d-selector">
+                        <?php
+                        $processes = SpecProcess::all();
+                        foreach($processes as $process) {
+                            echo $process->name.' with ordering '.$process->ordering.'<br />';
+                            foreach($process->specStep as $step) {
+                                echo $step->name.' with ordering '.$step->ordering.'<br />';
+                            }
+                            echo '<br />';
+                        }
+                        ?>
+                    </div>
                     <div class="tab-pane active" id="nuages">
                         <br />
                         <div style="width: 40%; min-height: 100px;">

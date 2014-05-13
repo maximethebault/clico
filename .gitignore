@@ -6,6 +6,9 @@ lib-cov
 *.out
 *.pid
 *.gz
+*.ply
+*.exe
+/processing/
 
 pids
 logs
