@@ -20,7 +20,7 @@ var StepNormalCalculation = inherit(Step, {
         splitInput.pop();
         var outputFile = splitInput.join('.') + '_NORMAL.ply';
 
-        this.process = spawn('meshlabserver', ['-i', inputFile, '-o', outputFile, '-s', 'script_normal.mlx', '-om', 'vn']);
+        this.process = spawn('meshlabserver', ['-i', inputFile, '-o', outputFile, '-m', 'vn', '-s', 'script_normal.mlx']);
         // setEncoding permet de dire à node d'interpréter les données reçues sur stdout comme une chaine de caractères plutôt que du binaire
         this.process.stdout.setEncoding('utf-8');
         this.process.stdout.on('data', function(data) {
