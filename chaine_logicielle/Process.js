@@ -6,20 +6,23 @@ var sqlCon = global.sqlCon;
 
 var Process = inherit({
     __constructor: function(attrs, model3d) {
-        this.attrs = attrs;
-        this.model3d = model3d;
-        this.running = false;
+        /*
+         * Process a pour vocation d'être étendue, c'est pourquoi tous ses champs sont précédés d'un underscore : on évite ainsi que des champs se fassent écrasés, ce qui pourrait produire des bugs bizarres
+         */
+        this._attrs = attrs;
+        this._model3d = model3d;
+        this._running = false;
     },
     step: function(cb) {
-        Step.get({process_id: this.attrs.id}, this, cb);
+        Step.get({process_id: this._attrs.id}, this, cb);
     },
     update: function(fields, cb) {
         var self = this;
         // on met à jour les attributs de l'objet
-        self.attrs = _.extend(self.attrs, fields);
-        sqlCon.query('UPDATE process SET ? WHERE id=?', [fields, self.attrs.id], function(err) {
+        self._attrs = _.extend(self._attrs, fields);
+        sqlCon.query('UPDATE process SET ? WHERE id=?', [fields, self._attrs.id], function(err) {
             if(err) {
-                var message = '[Process] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
+                var message = '[Process] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
                 console.log(message);
                 cb(new Error(message), null);
                 return;
@@ -34,9 +37,9 @@ var Process = inherit({
      */
     start: function(cb) {
         var self = this;
-        if(!self.running) {
-            self.running = true;
-            console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') lancé');
+        if(!self._running) {
+            self._running = true;
+            console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') lancé');
             self.update({
                 state: Constants.STATE_RUNNING
             }, function(err) {
@@ -52,7 +55,7 @@ var Process = inherit({
      */
     startNextStep: function(cb) {
         var self = this;
-        if(self.attrs.state !== Constants.STATE_RUNNING) {
+        if(self._attrs.state !== Constants.STATE_RUNNING) {
             return;
         }
         self.step(function(err, steps) {
@@ -61,18 +64,18 @@ var Process = inherit({
                 return;
             }
             steps.sort(function(a, b) {
-                return a.attrs.ordering - b.attrs.ordering;
+                return a._attrs.ordering - b._attrs.ordering;
             });
-            self.stepCurrent = undefined;
+            self._stepCurrent = undefined;
             for(var i = 0; i < steps.length; i++) {
                 // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
-                if(steps[i].attrs.state == Constants.STATE_STOPPED)
+                if(steps[i]._attrs.state == Constants.STATE_STOPPED)
                     continue;
-                self.stepCurrent = steps[i];
-                self.stepCurrent.start(cb);
+                self._stepCurrent = steps[i];
+                self._stepCurrent.start(cb);
                 break;
             }
-            if(!self.stepCurrent) {
+            if(!self._stepCurrent) {
                 self.done(function(err) {
                     if(err)
                         console.log("[Model3d] N'a pas pu mettre fin au Model3d : " + err);
@@ -89,10 +92,10 @@ var Process = inherit({
      */
     pause: function(hurry, cb) {
         var self = this;
-        console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') mis en pause');
-        if(self.stepCurrent) {
-            self.stepCurrent.pause(hurry, function() {
-                self.running = false;
+        console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') mis en pause');
+        if(self._stepCurrent) {
+            self._stepCurrent.pause(hurry, function() {
+                self._running = false;
                 self.update({
                     state: Constants.STATE_PAUSED
                 }, cb);
@@ -100,8 +103,8 @@ var Process = inherit({
             return;
         }
         else {
-            if(self.running)
-                self.running = false;
+            if(self._running)
+                self._running = false;
             self.update({
                 state: Constants.STATE_PAUSED
             }, cb);
@@ -114,10 +117,10 @@ var Process = inherit({
      */
     stop: function(cb) {
         var self = this;
-        console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') arrêté');
-        if(self.stepCurrent) {
-            self.stepCurrent.stop(function() {
-                self.running = false;
+        console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') arrêté');
+        if(self._stepCurrent) {
+            self._stepCurrent.stop(function() {
+                self._running = false;
                 self.update({
                     state: Constants.STATE_STOPPED
                 }, cb);
@@ -125,8 +128,8 @@ var Process = inherit({
             return;
         }
         else {
-            if(self.running)
-                self.running = false;
+            if(self._running)
+                self._running = false;
             self.update({
                 state: Constants.STATE_STOPPED
             }, cb);
@@ -137,7 +140,7 @@ var Process = inherit({
     },
     done: function(cb) {
         var self = this;
-        console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') terminé');
+        console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') terminé');
         self.update({
             state: Constants.STATE_STOPPED
         }, function(err) {
@@ -145,10 +148,10 @@ var Process = inherit({
                 cb(err);
                 return;
             }
-            if(self.running)
-                self.running = false;
-            self.stepCurrent = null;
-            self.model3d.startNextProcess(cb);
+            if(self._running)
+                self._running = false;
+            self._stepCurrent = null;
+            self._model3d.startNextProcess(cb);
         });
     }
 }, {

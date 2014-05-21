@@ -1,7 +1,10 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+var Process = require('../../Process');
+var inherit = require('inherit');
 
+var ProcessSubsampling = inherit(Process, {
+    __constructor: function(attrs, model3d) {
+        this.__base(attrs, model3d);
+    }
+});
 
+module.exports = ProcessSubsampling;

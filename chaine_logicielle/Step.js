@@ -5,23 +5,26 @@ var sqlCon = global.sqlCon;
 
 var Step = inherit({
     __constructor: function(attrs, process) {
-        this.attrs = attrs;
-        this.process = process;
-        this.running = false;
+        /*
+         * Step a pour vocation d'être étendue, c'est pourquoi tous ses champs sont précédés d'un underscore : on évite ainsi que des champs se fassent écrasés, ce qui pourrait produire des bugs bizarres
+         */
+        this._attrs = attrs;
+        this._process = process;
+        this._running = false;
         // quand ce champ passe à vrai, on ignore toutes les erreurs qui peuvent arriver (on a sans doute forcer la fermeture d'un child_process)
-        this.ignoreError = false;
+        this._ignoreError = false;
         // si l'utilisateur a demandé une pause/un stop, on va enregistrer le callback pour pouvoir l'appeler lorsque "done" est appelée
-        this.pendingCallback = null;
+        this._pendingCallback = null;
         // l'ordre donné à la Step
-        this.order = null;
+        this._order = null;
     },
     update: function(fields, cb) {
         var self = this;
         // on met à jour les attributs de l'objet
-        self.attrs = _.extend(self.attrs, fields);
-        sqlCon.query('UPDATE step SET ? WHERE id=?', [fields, self.attrs.id], function(err) {
+        self._attrs = _.extend(self._attrs, fields);
+        sqlCon.query('UPDATE step SET ? WHERE id=?', [fields, self._attrs.id], function(err) {
             if(err) {
-                var message = '[Step] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
+                var message = '[Step] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
                 console.error(message);
                 cb(new Error(message), null);
                 return;
@@ -36,11 +39,11 @@ var Step = inherit({
      */
     start: function(cb) {
         var self = this;
-        if(!self.running) {
-            self.running = true;
-            self.ignoreError = false;
-            self.pendingCallback = null;
-            console.info('[Step] Etape "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') lancée');
+        if(!self._running) {
+            self._running = true;
+            self._ignoreError = false;
+            self._pendingCallback = null;
+            console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') lancée');
             self.update({
                 state: Constants.STATE_RUNNING
             }, cb);
@@ -54,11 +57,11 @@ var Step = inherit({
      */
     pause: function(hurry, cb) {
         var self = this;
-        console.info('[Step] Etape "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') mise en pause');
-        self.order = Constants.COMMAND_PAUSE;
+        console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') mise en pause');
+        self._order = Constants.COMMAND_PAUSE;
         if(hurry)
-            self.ignoreError = true;
-        self.pendingCallback = cb;
+            self._ignoreError = true;
+        self._pendingCallback = cb;
     },
     /*
      *
@@ -67,41 +70,43 @@ var Step = inherit({
      */
     stop: function(cb) {
         var self = this;
-        console.info('[Step] Etape "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') arrêtée');
-        self.order = Constants.COMMAND_STOP;
-        self.ignoreError = true;
-        self.pendingCallback = cb;
+        console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') arrêtée');
+        self._order = Constants.COMMAND_STOP;
+        self._ignoreError = true;
+        self._pendingCallback = cb;
     },
     error: function(err) {
         var self = this;
-        if(!self.running)
+        if(!self._running)
             return;
-        if(!self.ignoreError) {
-            
+        if(!self._ignoreError) {
+
         }
     },
     done: function(cb) {
         var self = this;
-        if(!self.running) {
+        if(!self._running) {
             cb();
             return;
         }
-        console.info('[Step] Etape "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') terminée');
+        self._running = false;
+        // si "done" est appelée et que des erreurs surviennent ensuite, c'est qu'elles sont surement dues à une fermeture parfois un peu brutale des child_process ou autres : pas très grave, on peut les ignorer
+        self._ignoreError = true;
+        console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') terminée');
         self.update({
-            state: self.order ? self.order : Constants.STATE_STOPPED
+            state: self._order ? self._order : Constants.STATE_STOPPED
         }, function(err) {
-            if(self.pendingCallback) {
-                self.pendingCallback();
-                self.pendingCallback = undefined;
+            if(self._pendingCallback) {
+                self._pendingCallback();
+                self._pendingCallback = undefined;
                 cb(err);
             }
             else
-                self.process.startNextStep(function(err2) {
+                self._process.startNextStep(function(err2) {
                     if(!err2)
                         err2 = err;
                     cb(err2);
                 });
-            self.running = false;
         });
     }
 }, {
@@ -131,7 +136,7 @@ var Step = inherit({
             else {
                 var tabModels = _.map(rows, function(row) {
                     // require met en cache les fichiers déjà chargés
-                    var StepObject = require('./process/' + process.attrs.library_directory + '/step/' + row.library_name + '.step');
+                    var StepObject = require('./process/' + process._attrs.library_directory + '/step/' + row.library_name + '.step');
                     return new StepObject(row, process);
                 });
                 cb(null, tabModels);
