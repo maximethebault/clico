@@ -32,10 +32,51 @@ var Model3d = inherit({
         this.poolIdentifier = undefined;
         this.processCurrent = undefined;
         this.commandInProgress = false;
-        this.commandWatcher = setTimeout(this._commandWatch.bind(this), 1000);
+        this.commandWatcher = setTimeout(this._commandWatch.bind(this), this.__self.watchInterval);
+        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') créé');
     },
     _commandWatch: function() {
-        
+        var self = this;
+        sqlCon.query('SELECT command FROM model3d WHERE id=? AND command<>state', [self.attrs.id], function(err, rows) {
+            // on factorise dans la fonction suivante le code à exécuter après le lancement de l'ordre
+            function resetTimer() {
+                self.commandWatcher = setTimeout(self._commandWatch.bind(self), self.__self.watchInterval);
+            }
+            if(err) {
+                var message = '[Model3d] Impossible de vérifier l\'état de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
+                console.error(message);
+            }
+            if(rows.length) {
+                var newCommand = rows[0].command;
+                if(newCommand == Constants.COMMAND_PAUSE) {
+                    self.pause(false, function(err) {
+                        if(err)
+                            console.error('[Model3d] Impossible de mettre le processus en pause : ' + err + '.');
+                        resetTimer();
+                    });
+                }
+                else if(newCommand == Constants.COMMAND_RUN) {
+                    self.start(function(err) {
+                        if(err)
+                            console.error('[Model3d] Impossible de démarrer le processus : ' + err + '.');
+                        resetTimer();
+                    });
+                }
+                else if(newCommand == Constants.COMMAND_STOP) {
+                    self.stop(function(err) {
+                        if(err)
+                            console.error('[Model3d] Impossible d\'arrêter le processus : ' + err + '.');
+                        resetTimer();
+                    });
+                }
+                else {
+                    console.error('[Model3d] La commande n\'a pas été comprise.');
+                    resetTimer();
+                }
+            }
+            else
+                resetTimer();
+        });
     },
     process: function(cb) {
         Process.get({model3d_id: this.attrs.id}, this, cb);
@@ -46,8 +87,8 @@ var Model3d = inherit({
         self.attrs = _.extend(self.attrs, fields);
         sqlCon.query('UPDATE model3d SET ? WHERE id=?', [fields, self.attrs.id], function(err) {
             if(err) {
-                var message = '[Model3d] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : '+err+'.';
-                console.log(message);
+                var message = '[Model3d] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
+                console.error(message);
                 cb(new Error(message), null);
                 return;
             }
@@ -61,16 +102,26 @@ var Model3d = inherit({
      */
     start: function(cb) {
         var self = this;
+        // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
         if(self.commandInProgress)
             return;
         self.commandInProgress = true;
+        if(self.attrs.state == Constants.STATE_STOPPED) {
+            self.update({
+                command: Constants.COMMAND_STOP
+            }, function() {
+                self.commandInProgress = false;
+            });
+            return;
+        }
+        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') lancé');
         self.__self.poolModel3d.acquire(function(err, poolIdentifier) {
             self.poolIdentifier = poolIdentifier;
             self.update({
                 state: Constants.STATE_RUNNING
             }, function(err) {
                 if(!err)
-                    self._startNextProcess(cb);
+                    self.startNextProcess(cb);
                 self.commandInProgress = false;
             });
         });
@@ -80,34 +131,27 @@ var Model3d = inherit({
      * 
      * @param {Function} cb appelé quand le démarrage du Process est effectif (lorsqu'une Step a été lancée)
      */
-    _startNextProcess: function(cb) {
+    startNextProcess: function(cb) {
         var self = this;
         self.process(function(err, processes) {
             processes.sort(function(a, b) {
                 return a.attrs.ordering - b.attrs.ordering;
             });
-            if(!self.processCurrent) {
-                self.processCurrent = processes[0];
-                console.log(self.processCurrent);
+            self.processCurrent = undefined;
+            for(var i = 0; i < processes.length; i++) {
+                // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
+                if(processes[i].attrs.state == Constants.STATE_STOPPED)
+                    continue;
+                self.processCurrent = processes[i];
                 self.processCurrent.start(cb);
+                break;
             }
-            else {
-                for(var i = 0; i < processes.length; i++) {
-                    // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
-                    if(self.processCurrent.attrs.ordering < processes[i].attrs.ordering || self.processCurrent.attrs.id != processes[i].attrs.id)
-                        continue;
-                    if(self.processCurrent.attrs.id == processes[i].attrs.id) {
-                        if(processes[i + 1]) {
-                            self.processCurrent = processes[i + 1];
-                            self.processCurrent.start(cb);
-                        }
-                        else {
-                            self.processCurrent = undefined;
-                            self.done();
-                        }
-                        break;
-                    }
-                }
+            if(!self.processCurrent) {
+                self.done(function(err) {
+                    if(err)
+                        console.error("[Model3d] N'a pas pu mettre fin au Model3d : " + err);
+                    cb(err);
+                });
             }
         });
     },
@@ -119,8 +163,19 @@ var Model3d = inherit({
      */
     pause: function(hurry, cb) {
         var self = this;
+        // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
         if(self.commandInProgress)
             return;
+        self.commandInProgress = true;
+        if(self.attrs.state == Constants.STATE_STOPPED) {
+            self.update({
+                command: Constants.COMMAND_STOP
+            }, function() {
+                self.commandInProgress = false;
+            });
+            return;
+        }
+        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') mis en pause');
         if(self.processCurrent) {
             self.processCurrent.pause(hurry, function() {
                 self.__self.poolModel3d.release(self.poolIdentifier);
@@ -133,14 +188,16 @@ var Model3d = inherit({
             });
             return;
         }
-        if(self.poolIdentifier)
-            self.__self.poolModel3d.release(self.poolIdentifier);
-        self.update({
-            state: Constants.STATE_PAUSED
-        }, function(err) {
-            cb(err);
-            self.commandInProgress = false;
-        });
+        else {
+            if(self.poolIdentifier)
+                self.__self.poolModel3d.release(self.poolIdentifier);
+            self.update({
+                state: Constants.STATE_PAUSED
+            }, function(err) {
+                cb(err);
+                self.commandInProgress = false;
+            });
+        }
     },
     /*
      *
@@ -149,8 +206,11 @@ var Model3d = inherit({
      */
     stop: function(cb) {
         var self = this;
+        // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
         if(self.commandInProgress)
             return;
+        self.commandInProgress = true;
+        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') arrêté');
         if(self.processCurrent) {
             self.processCurrent.stop(function() {
                 self.__self.poolModel3d.release(self.poolIdentifier);
@@ -163,14 +223,16 @@ var Model3d = inherit({
             });
             return;
         }
-        if(self.poolIdentifier)
-            self.__self.poolModel3d.release(self.poolIdentifier);
-        self.update({
-            state: Constants.STATE_STOPPED
-        }, function(err) {
-            cb(err);
-            self.commandInProgress = false;
-        });
+        else {
+            if(self.poolIdentifier)
+                self.__self.poolModel3d.release(self.poolIdentifier);
+            self.update({
+                state: Constants.STATE_STOPPED
+            }, function(err) {
+                cb(err);
+                self.commandInProgress = false;
+            });
+        }
     },
     /*
      * Signale une erreur avant de suspendre ou stopper le traitement
@@ -178,15 +240,29 @@ var Model3d = inherit({
      * @param {Error} err l'erreur rencontrée. Si elle est fatale (err.fatal === true), on stoppe le traitement, sinon, on se contente de le suspendre (pause)
      */
     error: function(err) {
-
+        // TODO
     },
     /**
      * Réalise les traitements associés à la fin de génération d'un modèle
      */
-    done: function() {
-
+    done: function(cb) {
+        var self = this;
+        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') terminé');
+        if(self.poolIdentifier)
+            self.__self.poolModel3d.release(self.poolIdentifier);
+        self.update({
+            state: Constants.STATE_STOPPED
+        }, function(err) {
+            self.commandInProgress = false;
+            self.processCurrent = null;
+            cb(err);
+        });
     }
 }, {
+    // l'intervalle en millisecondes entre chaque vérification pour de nouvelles générations à démarrer
+    checkInterval: 5000,
+    // l'intervalle en millisecondes entre chaque vérification de nouvel ordre pour un Model3d
+    watchInterval: 100,
     poolUniqueIdentifier: 1,
     poolModel3d: poolModule.Pool({
         name: 'model3d',
@@ -216,10 +292,10 @@ var Model3d = inherit({
             }, this);
             query = query.join(' AND ');
         }
-        sqlCon.query('SELECT * FROM model3d WHERE '+query, args, function(err, rows) {
+        sqlCon.query('SELECT * FROM model3d WHERE ' + query, args, function(err, rows) {
             if(err) {
-                var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : '+err+'.';
-                console.log(message);
+                var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
+                console.error(message);
                 cb(new Error(message), null);
                 return;
             }
@@ -231,10 +307,37 @@ var Model3d = inherit({
     }
 });
 
+// au lancement du script, on réinitialise tout ce qui était dans l'état "RUNNING" à l'état "PAUSED"
+// cela permet de recommencer les traitements qui peuvent avoir été interrompus par un arrêt non prévu du script
+sqlCon.query('UPDATE model3d SET state=? WHERE state=?', [Constants.STATE_PAUSED, Constants.STATE_RUNNING], function(err) {
+    if(err) {
+        var message = '[Model3d] Erreur en BDD lors de l\'initialisation : ' + err + '.';
+        console.error(message);
+        cb(new Error(message), null);
+        return;
+    }
+});
+sqlCon.query('UPDATE process SET state=? WHERE state=?', [Constants.STATE_PAUSED, Constants.STATE_RUNNING], function(err) {
+    if(err) {
+        var message = '[Process] Erreur en BDD lors de l\'initialisation : ' + err + '.';
+        console.error(message);
+        cb(new Error(message), null);
+        return;
+    }
+});
+sqlCon.query('UPDATE step SET state=? WHERE state=?', [Constants.STATE_PAUSED, Constants.STATE_RUNNING], function(err) {
+    if(err) {
+        var message = '[Step] Erreur en BDD lors de l\'initialisation : ' + err + '.';
+        console.error(message);
+        cb(new Error(message), null);
+        return;
+    }
+});
+
 function checkPending() {
     Model3d.get({command: Constants.COMMAND_RUN, state: Constants.STATE_PAUSED}, function(err, models3d) {
         if(err) {
-            setTimeout(checkPending, 5000);
+            setTimeout(checkPending, Model3d.checkInterval);
             return;
         }
         async.each(
@@ -245,9 +348,11 @@ function checkPending() {
                     });
                 },
                 function() {
-                    setTimeout(checkPending, 5000);
+                    setTimeout(checkPending, Model3d.checkInterval);
                 }
         );
     });
 }
 checkPending();
+
+// TODO: reprise des running, en cas de redémarrage du script

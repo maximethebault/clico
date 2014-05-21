@@ -19,7 +19,7 @@ var Process = inherit({
         self.attrs = _.extend(self.attrs, fields);
         sqlCon.query('UPDATE process SET ? WHERE id=?', [fields, self.attrs.id], function(err) {
             if(err) {
-                var message = '[Process] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : '+err+'.';
+                var message = '[Process] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
                 console.log(message);
                 cb(new Error(message), null);
                 return;
@@ -36,11 +36,12 @@ var Process = inherit({
         var self = this;
         if(!self.running) {
             self.running = true;
+            console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') lancé');
             self.update({
                 state: Constants.STATE_RUNNING
             }, function(err) {
                 if(!err)
-                    self._startNextStep(cb);
+                    self.startNextStep(cb);
             });
         }
     },
@@ -49,33 +50,34 @@ var Process = inherit({
      * 
      * @param {Function} cb appelé quand le démarrage de la Step est effectif
      */
-    _startNextStep: function(cb) {
+    startNextStep: function(cb) {
         var self = this;
+        if(self.attrs.state !== Constants.STATE_RUNNING) {
+            return;
+        }
         self.step(function(err, steps) {
+            if(err) {
+                cb(err);
+                return;
+            }
             steps.sort(function(a, b) {
                 return a.attrs.ordering - b.attrs.ordering;
             });
-            if(!self.stepCurrent) {
-                self.stepCurrent = steps[0];
+            self.stepCurrent = undefined;
+            for(var i = 0; i < steps.length; i++) {
+                // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
+                if(steps[i].attrs.state == Constants.STATE_STOPPED)
+                    continue;
+                self.stepCurrent = steps[i];
                 self.stepCurrent.start(cb);
+                break;
             }
-            else {
-                for(var i = 0; i < steps.length; i++) {
-                    // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
-                    if(self.stepCurrent.attrs.ordering < steps[i].attrs.ordering || self.stepCurrent.attrs.id != steps[i].attrs.id)
-                        continue;
-                    if(self.stepCurrent.attrs.id == steps[i].attrs.id) {
-                        if(steps[i + 1]) {
-                            self.stepCurrent = steps[i + 1];
-                            self.stepCurrent.start(cb);
-                        }
-                        else {
-                            self.stepCurrent = undefined;
-                            self.done();
-                        }
-                        break;
-                    }
-                }
+            if(!self.stepCurrent) {
+                self.done(function(err) {
+                    if(err)
+                        console.log("[Model3d] N'a pas pu mettre fin au Model3d : " + err);
+                    cb(err);
+                });
             }
         });
     },
@@ -87,6 +89,7 @@ var Process = inherit({
      */
     pause: function(hurry, cb) {
         var self = this;
+        console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') mis en pause');
         if(self.stepCurrent) {
             self.stepCurrent.pause(hurry, function() {
                 self.running = false;
@@ -96,11 +99,13 @@ var Process = inherit({
             });
             return;
         }
-        if(self.running)
-            self.running = false;
-        self.update({
-            state: Constants.STATE_PAUSED
-        }, cb);
+        else {
+            if(self.running)
+                self.running = false;
+            self.update({
+                state: Constants.STATE_PAUSED
+            }, cb);
+        }
     },
     /*
      *
@@ -109,6 +114,7 @@ var Process = inherit({
      */
     stop: function(cb) {
         var self = this;
+        console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') arrêté');
         if(self.stepCurrent) {
             self.stepCurrent.stop(function() {
                 self.running = false;
@@ -118,12 +124,33 @@ var Process = inherit({
             });
             return;
         }
-        if(self.running)
-            self.running = false;
+        else {
+            if(self.running)
+                self.running = false;
+            self.update({
+                state: Constants.STATE_STOPPED
+            }, cb);
+        }
+    },
+    error: function(err) {
+        // TODO
+    },
+    done: function(cb) {
+        var self = this;
+        console.info('[Process] Processus "' + this.attrs.name + '" (ID = ' + this.attrs.id + ') terminé');
         self.update({
             state: Constants.STATE_STOPPED
-        }, cb);
-    },
+        }, function(err) {
+            if(err) {
+                cb(err);
+                return;
+            }
+            if(self.running)
+                self.running = false;
+            self.stepCurrent = null;
+            self.model3d.startNextProcess(cb);
+        });
+    }
 }, {
     get: function(cond, model3d, cb) {
         var query = '';
@@ -142,16 +169,16 @@ var Process = inherit({
             }, this);
             query = query.join(' AND ');
         }
-        sqlCon.query('SELECT p.*, sp.library_directory, sp.library_name, sp.ordering FROM process p INNER JOIN spec_process sp ON p.spec_process_id=sp.id WHERE '+query, args, function(err, rows) {
+        sqlCon.query('SELECT p.*, sp.name, sp.library_directory, sp.library_name, sp.ordering FROM process p INNER JOIN spec_process sp ON p.spec_process_id=sp.id WHERE ' + query, args, function(err, rows) {
             if(err) {
-                var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : '+err+'.';
-                console.log(message);
+                var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
+                console.error(message);
                 cb(new Error(message), null);
             }
             else {
                 var tabModels = _.map(rows, function(row) {
                     // require met en cache les fichiers déjà chargés
-                    var ProcessObject = require('./process/'+row.library_directory+'/'+row.library_name+'.process');
+                    var ProcessObject = require('./process/' + row.library_directory + '/' + row.library_name + '.process');
                     return new ProcessObject(row, model3d);
                 });
                 cb(null, tabModels);
