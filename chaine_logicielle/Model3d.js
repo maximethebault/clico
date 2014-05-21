@@ -28,22 +28,22 @@ var Constants = require('./Constants');
  */
 var Model3d = inherit({
     __constructor: function(attrs) {
-        this.attrs = attrs;
+        this._attrs = attrs;
         this.poolIdentifier = undefined;
         this.processCurrent = undefined;
         this.commandInProgress = false;
         this.commandWatcher = setTimeout(this._commandWatch.bind(this), this.__self.watchInterval);
-        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') créé');
+        console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') créé');
     },
     _commandWatch: function() {
         var self = this;
-        sqlCon.query('SELECT command FROM model3d WHERE id=? AND command<>state', [self.attrs.id], function(err, rows) {
+        sqlCon.query('SELECT command FROM model3d WHERE id=? AND command<>state', [self._attrs.id], function(err, rows) {
             // on factorise dans la fonction suivante le code à exécuter après le lancement de l'ordre
             function resetTimer() {
                 self.commandWatcher = setTimeout(self._commandWatch.bind(self), self.__self.watchInterval);
             }
             if(err) {
-                var message = '[Model3d] Impossible de vérifier l\'état de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
+                var message = '[Model3d] Impossible de vérifier l\'état de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
                 console.error(message);
             }
             if(rows.length) {
@@ -79,15 +79,15 @@ var Model3d = inherit({
         });
     },
     process: function(cb) {
-        Process.get({model3d_id: this.attrs.id}, this, cb);
+        Process.get({model3d_id: this._attrs.id}, this, cb);
     },
     update: function(fields, cb) {
         var self = this;
         // on met à jour les attributs de l'objet
-        self.attrs = _.extend(self.attrs, fields);
-        sqlCon.query('UPDATE model3d SET ? WHERE id=?', [fields, self.attrs.id], function(err) {
+        self._attrs = _.extend(self._attrs, fields);
+        sqlCon.query('UPDATE model3d SET ? WHERE id=?', [fields, self._attrs.id], function(err) {
             if(err) {
-                var message = '[Model3d] Erreur lors de la mise à jour de l\'enregistrement ' + self.attrs.id + ' en BDD : ' + err + '.';
+                var message = '[Model3d] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
                 console.error(message);
                 cb(new Error(message), null);
                 return;
@@ -106,7 +106,7 @@ var Model3d = inherit({
         if(self.commandInProgress)
             return;
         self.commandInProgress = true;
-        if(self.attrs.state == Constants.STATE_STOPPED) {
+        if(self._attrs.state == Constants.STATE_STOPPED) {
             self.update({
                 command: Constants.COMMAND_STOP
             }, function() {
@@ -114,7 +114,7 @@ var Model3d = inherit({
             });
             return;
         }
-        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') lancé');
+        console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') lancé');
         self.__self.poolModel3d.acquire(function(err, poolIdentifier) {
             self.poolIdentifier = poolIdentifier;
             self.update({
@@ -135,12 +135,12 @@ var Model3d = inherit({
         var self = this;
         self.process(function(err, processes) {
             processes.sort(function(a, b) {
-                return a.attrs.ordering - b.attrs.ordering;
+                return a._attrs.ordering - b._attrs.ordering;
             });
             self.processCurrent = undefined;
             for(var i = 0; i < processes.length; i++) {
                 // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
-                if(processes[i].attrs.state == Constants.STATE_STOPPED)
+                if(processes[i]._attrs.state == Constants.STATE_STOPPED)
                     continue;
                 self.processCurrent = processes[i];
                 self.processCurrent.start(cb);
@@ -167,7 +167,7 @@ var Model3d = inherit({
         if(self.commandInProgress)
             return;
         self.commandInProgress = true;
-        if(self.attrs.state == Constants.STATE_STOPPED) {
+        if(self._attrs.state == Constants.STATE_STOPPED) {
             self.update({
                 command: Constants.COMMAND_STOP
             }, function() {
@@ -175,7 +175,7 @@ var Model3d = inherit({
             });
             return;
         }
-        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') mis en pause');
+        console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') mis en pause');
         if(self.processCurrent) {
             self.processCurrent.pause(hurry, function() {
                 self.__self.poolModel3d.release(self.poolIdentifier);
@@ -210,7 +210,7 @@ var Model3d = inherit({
         if(self.commandInProgress)
             return;
         self.commandInProgress = true;
-        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') arrêté');
+        console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') arrêté');
         if(self.processCurrent) {
             self.processCurrent.stop(function() {
                 self.__self.poolModel3d.release(self.poolIdentifier);
@@ -247,7 +247,7 @@ var Model3d = inherit({
      */
     done: function(cb) {
         var self = this;
-        console.info('[Model3d] Traitement (ID = ' + this.attrs.id + ') terminé');
+        console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') terminé');
         if(self.poolIdentifier)
             self.__self.poolModel3d.release(self.poolIdentifier);
         self.update({

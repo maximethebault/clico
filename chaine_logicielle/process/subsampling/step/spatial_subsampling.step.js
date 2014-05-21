@@ -30,6 +30,7 @@ var StepSpatialSubsampling = inherit(Step, {
     start: function(cb) {
         var self = this;
         self.__base(function(err) {
+            cb(err);
             var inputFile = 'input.ply';
 
             /*

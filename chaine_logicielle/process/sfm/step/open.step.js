@@ -1,3 +1,6 @@
+var Step = require('../../../Step');
+var inherit = require('inherit');
+
 var StepOpen = inherit(Step, {
     run: function() {
         var self = this;
@@ -47,9 +50,6 @@ var StepOpen = inherit(Step, {
                 self.vsfm.vsfmSocket.write('33166 ' + self.vsfm.pathToImages + 'list.txt\n');
             });
         });
-    },
-    getName: function() {
-        return "Ouverture des images";
     },
     processLine: function(line) {
         if(this.__base(line)) {
