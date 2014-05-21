@@ -1,0 +1,7 @@
+<!DOCTYPE FilterScript>
+<FilterScript>
+ <filter name="Select Faces with edges longer than...">
+  <Param type="RichDynamicFloat" value="0.008909" name="Threshold" min="0" max="0.890918" tooltip="All the faces with an edge &lt;b>longer&lt;/b> than this threshold will be deleted. Useful for removing long skinny faces obtained by bad triangulation of range maps." description="Edge Threshold"/>
+ </filter>
+ <filter name="Delete Selected Faces"/>
+</FilterScript>
