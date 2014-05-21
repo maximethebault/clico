@@ -18,17 +18,99 @@ require 'server/php/libs/loadActiveRecord.php'
                 </ul>
 
                 <div class="tab-content">
-                    <div class="model3d-selector">
-                        <?php
-                        $processes = SpecProcess::all();
-                        foreach($processes as $process) {
-                            echo $process->name.' with ordering '.$process->ordering.'<br />';
-                            foreach($process->specStep as $step) {
-                                echo $step->name.' with ordering '.$step->ordering.'<br />';
-                            }
-                            echo '<br />';
-                        }
-                        ?>
+                    <div class="model3d-selector">	
+                    	<h3>Partie Visualisation</h3>
+                    	<img src="images/progress.png" style="width: 30%; margin: auto; display: block;"/>
+                    	<table class="model3d-selector-table">
+                    		<tr>
+		                        <?php
+		                        $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
+		                        $order = 0;
+		                        foreach($processes as $process) {
+		                            //echo $process->name.' with ordering '.$process->ordering.'<br />';
+		                            /*foreach($process->specStep as $step) {
+		                                echo $step->name.' with ordering '.$step->ordering.'<br />';
+		                            }*/
+		                            if($order == 0) {
+		                            	echo '<td>';
+		                            }
+		                            else {
+			                            if($order < $process->ordering) {
+				                            echo '</td><td>';
+			                            }
+									}
+									echo '<span id="'.$process->id.'" class="process">'.$process->name.'</span>';
+									$order = $process->ordering;
+									
+									
+		                        }
+		                        ?>
+								</td>
+                    		</tr>
+                    	</table>
+                    	<div class="model3d-steps">
+							<?php
+						    $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
+						    foreach($processes as $process) {
+						    	echo '<div class="model3d-step '.$process->id.'">';
+						    	echo '<h1>'.$process->name.'</h1>';
+						    	$i = 1;
+						        foreach($process->specStep as $step) {
+						        	echo '<span class="step-name">'.$i.'. '.$step->name.'</span>';
+						        	?>
+									<div class="progress progress-striped active">
+										<div class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 45%">
+										</div>
+									</div>
+						        	<?php
+						        	$i++;
+						        }
+						        echo '</div>';
+						    }
+							?>
+                    	</div>
+                    	
+                    	<h3>Partie Formulaire</h3>
+                    	<form>
+	                    	<table class="model3d-selector-table">
+	                    		<tr>
+			                        <?php
+			                        $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
+			                        $order = 0;
+			                        foreach($processes as $process) {
+			                            //echo $process->name.' with ordering '.$process->ordering.'<br />';
+			                            /*foreach($process->specStep as $step) {
+			                                echo $step->name.' with ordering '.$step->ordering.'<br />';
+			                            }*/
+			                            if($order == 0) {
+			                            	echo '<td>';
+			                            	echo '<span id="'.$process->id.'" class="process process-selected">
+												'.$process->name.'
+												<input type="radio" name="order'.$process->ordering.'" value="'.$process->id.'" style="display:none;" checked>
+												</span>';
+			                            }
+			                            else {
+				                            if($order < $process->ordering) {
+					                            echo '</td><td>';
+					                            echo '<span id="'.$process->id.'" class="process process-selected">
+												'.$process->name.'
+												<input type="radio" name="order'.$process->ordering.'" value="'.$process->id.'" style="display:none;" checked>
+												</span>';
+				                            }
+				                            else {
+					                            echo '<span id="'.$process->id.'" class="process">
+												'.$process->name.'
+												<input type="radio" name="order'.$process->ordering.'" value="'.$process->id.'" style="display:none;">
+												</span>';
+				                            }
+										}
+										$order = $process->ordering;
+			                        }
+			                        ?>
+									</td>
+	                    		</tr>
+	                    	</table>
+                    	</form>
                     </div>
                     <div class="tab-pane active" id="nuages">
                         <br />
@@ -269,5 +351,22 @@ $(document).ready(function() {
     window.cnpao.View.Model3d.loadView();
 });
         </script>
+        
+        <script>
+		$("span.process").click(function() {
+			$(this).parent().children('span.process').each(function() {
+				$(this).removeClass("process-selected");
+			});
+			if($("input", this).is(':checked')) {
+				$("input", this).prop('checked',false);
+				$(this).toggleClass("process-selected");
+			}
+			else {
+				$("input", this).prop('checked',true);
+				$(this).toggleClass("process-selected");
+			}
+			
+		});
+	</script>
     </body>
 </html>
