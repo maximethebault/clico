@@ -1,5 +1,6 @@
 var inherit = require('inherit');
 var _ = require('underscore');
+var Utils = require('./Utils');
 var Constants = require('./Constants');
 var sqlCon = global.sqlCon;
 
@@ -53,7 +54,7 @@ var Step = inherit({
      * Met en pause la Step courante
      * 
      * @param {boolean} hurry si la Step courante doit être interrompue dès que possible au risque de devoir par la suite la recommencer
-     * @param {Function} cb appelé quand la mise en pause est effective, c'est-à-dire quand plus aucune Step lié à ce Model3d n'est en cours d'exécution
+     * @param {Function} cb appelé quand la mise en pause est effective, c'est-à-dire une fois que la Step a été vraiment arrêtée
      */
     pause: function(hurry, cb) {
         var self = this;
@@ -109,27 +110,13 @@ var Step = inherit({
                 });
         });
     }
+    // TODO: implémenter suivi progression
 }, {
     get: function(cond, process, cb) {
-        var query = '';
-        var args = [];
-        if(typeof cond === 'string') {
-            query = '?';
-            args = [cond];
-        }
-        else {
-            query = [];
-            _.each(cond, function(value, key) {
-                query.push('?');
-                var obj = {};
-                obj[key] = value;
-                args.push(obj);
-            }, this);
-            query = query.join(' AND ');
-        }
-        sqlCon.query('SELECT s.*, ss.name, ss.library_name, ss.ordering FROM step s INNER JOIN spec_step ss ON s.spec_step_id=ss.id WHERE ' + query, args, function(err, rows) {
+        var queryArgs = Utils.getQueryArgs(cond);
+        sqlCon.query('SELECT s.*, ss.name, ss.library_name, ss.ordering FROM step s INNER JOIN spec_step ss ON s.spec_step_id=ss.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
-                var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
+                var message = '[Step] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);
                 cb(new Error(message), null);
             }

@@ -10,8 +10,11 @@ var sqlCon = mysql.createPool({
     connectionLimit: 1
 });
 global.sqlCon = sqlCon;
+var File = require('./File');
+var Param = require('./Param');
 var Process = require('./Process');
 var poolModule = require('generic-pool');
+var Utils = require('./Utils');
 var Constants = require('./Constants');
 
 /**
@@ -78,8 +81,29 @@ var Model3d = inherit({
                 resetTimer();
         });
     },
-    process: function(cb) {
-        Process.get({model3d_id: this._attrs.id}, this, cb);
+    file: function(options, cb) {
+        if(_.isFunction(options)) {
+            cb = options;
+            options = {};
+        }
+        options = _.extend(options, {model3d_id: this._attrs.id});
+        File.get(options, this, cb);
+    },
+    param: function(options, cb) {
+        if(_.isFunction(options)) {
+            cb = options;
+            options = {};
+        }
+        options = _.extend(options, {model3d_id: this._attrs.id});
+        Param.get(options, this, cb);
+    },
+    process: function(options, cb) {
+        if(_.isFunction(options)) {
+            cb = options;
+            options = {};
+        }
+        options = _.extend(options, {model3d_id: this._attrs.id});
+        Process.get(options, this, cb);
     },
     update: function(fields, cb) {
         var self = this;
@@ -276,23 +300,8 @@ var Model3d = inherit({
         refreshIdle: false
     }),
     get: function(cond, cb) {
-        var query = '';
-        var args = [];
-        if(typeof cond === 'string') {
-            query = '?';
-            args = [cond];
-        }
-        else {
-            query = [];
-            _.each(cond, function(value, key) {
-                query.push('?');
-                var obj = {};
-                obj[key] = value;
-                args.push(obj);
-            }, this);
-            query = query.join(' AND ');
-        }
-        sqlCon.query('SELECT * FROM model3d WHERE ' + query, args, function(err, rows) {
+        var queryArgs = Utils.getQueryArgs(cond);
+        sqlCon.query('SELECT * FROM model3d WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
                 var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);

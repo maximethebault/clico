@@ -1,6 +1,7 @@
 var inherit = require('inherit');
 var Step = require('./Step');
 var _ = require('underscore');
+var Utils = require('./Utils');
 var Constants = require('./Constants');
 var sqlCon = global.sqlCon;
 
@@ -13,8 +14,13 @@ var Process = inherit({
         this._model3d = model3d;
         this._running = false;
     },
-    step: function(cb) {
-        Step.get({process_id: this._attrs.id}, this, cb);
+    step: function(options, cb) {
+        if(_.isFunction(options)) {
+            cb = options;
+            options = {};
+        }
+        options = _.extend(options, {process_id: this._attrs.id});
+        Step.get(options, this, cb);
     },
     update: function(fields, cb) {
         var self = this;
@@ -78,7 +84,7 @@ var Process = inherit({
             if(!self._stepCurrent) {
                 self.done(function(err) {
                     if(err)
-                        console.log("[Model3d] N'a pas pu mettre fin au Model3d : " + err);
+                        console.log("[Process] N'a pas pu mettre fin au Process : " + err);
                     cb(err);
                 });
             }
@@ -156,25 +162,10 @@ var Process = inherit({
     }
 }, {
     get: function(cond, model3d, cb) {
-        var query = '';
-        var args = [];
-        if(typeof cond === 'string') {
-            query = '?';
-            args = [cond];
-        }
-        else {
-            query = [];
-            _.each(cond, function(value, key) {
-                query.push('?');
-                var obj = {};
-                obj[key] = value;
-                args.push(obj);
-            }, this);
-            query = query.join(' AND ');
-        }
-        sqlCon.query('SELECT p.*, sp.name, sp.library_directory, sp.library_name, sp.ordering FROM process p INNER JOIN spec_process sp ON p.spec_process_id=sp.id WHERE ' + query, args, function(err, rows) {
+        var queryArgs = Utils.getQueryArgs(cond);
+        sqlCon.query('SELECT p.*, sp.name, sp.library_directory, sp.library_name, sp.ordering FROM process p INNER JOIN spec_process sp ON p.spec_process_id=sp.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
-                var message = '[Model3d] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
+                var message = '[Process] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);
                 cb(new Error(message), null);
             }
