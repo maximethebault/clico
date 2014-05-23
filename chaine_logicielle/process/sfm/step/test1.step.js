@@ -9,7 +9,7 @@ var StepTest1 = inherit(Step, {
     start: function(cb) {
         var self = this;
         self.__base(function(err) {
-            self._process._model3d.file({ext: ['jpg', 'jpeg', 'ply']}, function(err, res) {
+            self._process._model3d.file({code: ['sfmImages']}, function(err, res) {
                 console.log(res);
             });
             self.timeout = setTimeout(function() {

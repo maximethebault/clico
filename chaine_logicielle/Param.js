@@ -29,17 +29,19 @@ var Param = inherit({
 }, {
     get: function(cond, process, cb) {
         var queryArgs = Utils.getQueryArgs(cond);
-        sqlCon.query('SELECT p.* FROM param p WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
+        sqlCon.query('SELECT p.* FROM param p INNER JOIN spec_param sp ON p.spec_param_id=sp.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
                 var message = '[Param] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);
                 cb(new Error(message), null);
             }
             else {
+                var tabKeys = [];
                 var tabModels = _.map(rows, function(row) {
+                    tabKeys.push(row.code);
                     return new Param(row, process);
                 });
-                cb(null, tabModels);
+                cb(null, _.object(tabKeys, tabModels));
             }
         });
     }

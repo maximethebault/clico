@@ -29,17 +29,19 @@ var File = inherit({
 }, {
     get: function(cond, process, cb) {
         var queryArgs = Utils.getQueryArgs(cond);
-        sqlCon.query('SELECT f.* FROM file f WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
+        sqlCon.query('SELECT f.*, sf.code FROM file f INNER JOIN spec_file sf ON f.spec_file_id=sf.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
                 var message = '[File] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);
                 cb(new Error(message), null);
             }
             else {
+                var tabKeys = [];
                 var tabModels = _.map(rows, function(row) {
+                    tabKeys.push(row.code);
                     return new File(row, process);
                 });
-                cb(null, tabModels);
+                cb(null, _.object(tabKeys, tabModels));
             }
         });
     }
