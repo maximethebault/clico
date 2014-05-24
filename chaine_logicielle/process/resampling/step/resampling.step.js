@@ -46,7 +46,7 @@ var StepResampling = inherit(Step, {
 
             // on force la création du fichier pour que fs.watch ne provoque pas d'erreur si le fichier n'existe pas
             create_file(outputFile, function() {
-                self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-O', inputFile, '-SAMPLE_MESH', 'POINT', nb_points]);
+                self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-PREC', '12', '-SEP', 'SPACE', '-O', inputFile, '-SAMPLE_MESH', 'POINT', nb_points]);
                 self.process.on('error', self.error.bind(self));
                 self.watcher = fs.watch(outputFile, function(event) {
                     if(event == 'change') {
