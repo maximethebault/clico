@@ -2,7 +2,7 @@
 $conInfo = array(
     'host' => 'localhost',
     'user' => 'root',
-    'password' => 'root',
-    'database' => 'CNPAO',
+    'password' => '',
+    'database' => 'cnpao',
     'charset' => 'utf8'
 );
