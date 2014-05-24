@@ -2,6 +2,7 @@ var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
 var inherit = require('inherit');
+var _ = require('underscore');
 
 /**
  * Fonction qui crée un fichier vide, ou écrase un fichier déjà existant
@@ -68,17 +69,9 @@ var StepSpatialSubsampling = inherit(Step, {
         self.__base(cb);
         self.kill();
     },
-    kill: function() {
-        var self = this;
-        self.clean(function() {
-            self.done(function(err) {
-                console.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') ne s\'est pas terminée normalement : ' + err + '.');
-            });
-        });
-    },
     error: function(err) {
         // si l'erreur est juste une chaîne de caractères et non un véritable objet Error, on la transforme
-        if(typeof err === 'string')
+        if(_.isString(err))
             err = new Error(err);
         // toutes les erreurs de cette Step seront fatales (provoque l'arrêt de l'ensemble du traitement)
         err.fatal = true;
@@ -101,6 +94,8 @@ var StepSpatialSubsampling = inherit(Step, {
                 if(cb)
                     cb();
             });
+        else if(cb)
+            cb();
     }
 }, {
     // si un fichier n'a pas bougé pendant ce laps de temps (en ms), on considérera que cloudcompare a fini de l'écrire et que son travail est terminé

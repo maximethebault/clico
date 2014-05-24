@@ -27,7 +27,9 @@ var Param = inherit({
         });
     }
 }, {
-    get: function(cond, process, cb) {
+    tabCachedModels: {},
+    get: function(cond, model3d, cb) {
+        var self = this;
         var queryArgs = Utils.getQueryArgs(cond);
         sqlCon.query('SELECT p.* FROM param p INNER JOIN spec_param sp ON p.spec_param_id=sp.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
@@ -39,10 +41,24 @@ var Param = inherit({
                 var tabKeys = [];
                 var tabModels = _.map(rows, function(row) {
                     tabKeys.push(row.code);
-                    return new Param(row, process);
+                    if(self.tabCachedModels.hasOwnProperty(row.id))
+                        self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                    else
+                        self.tabCachedModels[row.id] = new Param(row, model3d);
+                    return self.tabCachedModels[row.id];
                 });
                 cb(null, _.object(tabKeys, tabModels));
             }
+        });
+    },
+    /**
+     * Pour pouvoir ré-utiliser les mêmes objects entre chaque pause, ils sont mis en cache dans des tableaux associatifs (en JavaScript, ce sont tout simplement des objets) : tabCachedModels
+     * On peut rencontrer les mêmes problèmes qu'en Java : tant qu'on garde une référence vers un objet, il ne sera pas nettoyé par le Garbage Collector : c'est donc le problème que résout cette fonction
+     */
+    removeCache: function(model3d) {
+        _.forEach(this.tabCachedModels, function(cachedModel, index) {
+            if(cachedModel._model3d == model3d)
+                delete this.tabCachedModels[index];
         });
     }
 });

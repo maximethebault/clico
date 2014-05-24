@@ -9,7 +9,7 @@ var Utils = inherit({}, {
      *                       si la valeur est un tableau, il sera utilisé dans une clause IN (...) 
      * Exemples :
      * "id=4 AND sal>4" : la condition est une chaîne de caractères, on renvoie tel quel : {where: "id=4 AND sal>4"}
-     * {id: 5, sal: 4} : {where: "id=? AND sal=?", args: [5, 4]}
+     * {id: 5, sal: 4} : {where: "? AND ?", args: [{id: 5}, {sal: 4}]}
      * {id: 5, model3d_id: [4, 5, 6]} : {where: "id=? AND model3d_id IN (?,?,?)", args: [5, 4, 5, 6]}
      * 
      * @param {Object} cond la condition à traduire

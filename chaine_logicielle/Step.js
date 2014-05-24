@@ -33,6 +33,9 @@ var Step = inherit({
             cb(null);
         });
     },
+    updateProgress: function(newProgress) {
+        // TODO: implémenter suivi progression
+    },
     /*
      * Démarre la Step courante
      * 
@@ -60,9 +63,9 @@ var Step = inherit({
         var self = this;
         console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') mise en pause');
         self._order = Constants.COMMAND_PAUSE;
+        self._pendingCallback = cb;
         if(hurry)
             self._ignoreError = true;
-        self._pendingCallback = cb;
     },
     /*
      *
@@ -75,13 +78,19 @@ var Step = inherit({
         self._order = Constants.COMMAND_STOP;
         self._ignoreError = true;
         self._pendingCallback = cb;
+        self.kill();
     },
     error: function(err) {
         var self = this;
         if(!self._running)
             return;
+        if(err.fatal !== false)
+            err.fatal = true;
         if(!self._ignoreError) {
-
+            if(err.fatal)
+                self._ignoreError = true;
+            console.error('[Step] Erreur sur l\'étape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : ' + err + '.');
+            this._process.error(err);
         }
     },
     done: function(cb) {
@@ -109,10 +118,33 @@ var Step = inherit({
                     cb(err2);
                 });
         });
+    },
+    /**
+     * Fonction chargée de nettoyer les processus et autres créés pour cette Step
+     * 
+     * @param {Function} cb la fonction à exécuter une fois le ménage fait
+     */
+    clean: function(cb) {
+        console.warn('[WARNING][Step] La fonction "clean" devrait être redéfinie !');
+        // si la fonction n'a pas été redéfinie dans une classe fille, on considère qu'il n'y a rien à nettoyer (hautement improbable, Step des plus étranges) : on exécute directement le callback
+        cb();
+    },
+    /**
+     * Wrapper de clean, appelle 'done' une fois que le ménage est terminé
+     */
+    kill: function() {
+        var self = this;
+        self.clean(function() {
+            self.done(function(err) {
+                if(err)
+                    console.error('[Step] La step n\'a pas réussi à se terminer : ' + err + '.');
+            });
+        });
     }
-    // TODO: implémenter suivi progression
 }, {
+    tabCachedModels: {},
     get: function(cond, process, cb) {
+        var self = this;
         var queryArgs = Utils.getQueryArgs(cond);
         sqlCon.query('SELECT s.*, ss.name, ss.library_name, ss.ordering FROM step s INNER JOIN spec_step ss ON s.spec_step_id=ss.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
@@ -122,13 +154,28 @@ var Step = inherit({
             }
             else {
                 var tabModels = _.map(rows, function(row) {
-                    // require met en cache les fichiers déjà chargés
-                    var StepObject = require('./process/' + process._attrs.library_directory + '/step/' + row.library_name + '.step');
-                    return new StepObject(row, process);
+                    if(self.tabCachedModels.hasOwnProperty(row.id))
+                        self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                    else {
+                        // require met en cache les fichiers déjà chargés
+                        var StepObject = require('./process/' + process._attrs.library_directory + '/step/' + row.library_name + '.step');
+                        self.tabCachedModels[row.id] = new StepObject(row, process);
+                    }
+                    return self.tabCachedModels[row.id];
                 });
                 cb(null, tabModels);
             }
         });
+    },
+    /**
+     * Pour pouvoir ré-utiliser les mêmes objects entre chaque pause, ils sont mis en cache dans des tableaux associatifs (en JavaScript, ce sont tout simplement des objets) : tabCachedModels
+     * On peut rencontrer les mêmes problèmes qu'en Java : tant qu'on garde une référence vers un objet, il ne sera pas nettoyé par le Garbage Collector : c'est donc le problème que résout cette fonction
+     */
+    removeCache: function(process) {
+        _.forEach(this.tabCachedModels, function(cachedModel, index) {
+            if(cachedModel._process == process)
+                delete this.tabCachedModels[index];
+        }, this);
     }
 });
 

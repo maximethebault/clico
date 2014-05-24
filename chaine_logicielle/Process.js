@@ -13,6 +13,13 @@ var Process = inherit({
         this._attrs = attrs;
         this._model3d = model3d;
         this._running = false;
+        /*
+         * Quand ce champ passe à vrai, on ignore toutes les erreurs qui peuvent arriver.
+         * Utilité : on vient d'avoir une erreur (par ex. : impossible de trouver le fichier x) : la première est souvent l'erreur source, et elle est suivie par d'autres (puisqu'on fait ensuite un kill, on pourrait avoir des erreurs dues à des fermetures prématurées de processus).
+         * Ces dernières sont moins intéressantes et écraseraient l'erreur d'origine. C'est pourquoi on met une sécurité.
+         */
+        this._ignoreError = false;
+        this._stepCurrent = null;
     },
     step: function(options, cb) {
         if(_.isFunction(options)) {
@@ -45,6 +52,7 @@ var Process = inherit({
         var self = this;
         if(!self._running) {
             self._running = true;
+            self._ignoreError = false;
             console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') lancé');
             self.update({
                 state: Constants.STATE_RUNNING
@@ -99,9 +107,12 @@ var Process = inherit({
     pause: function(hurry, cb) {
         var self = this;
         console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') mis en pause');
+        if(hurry)
+            self._ignoreError = true;
         if(self._stepCurrent) {
             self._stepCurrent.pause(hurry, function() {
                 self._running = false;
+                self._stepCurrent = null;
                 self.update({
                     state: Constants.STATE_PAUSED
                 }, cb);
@@ -124,9 +135,11 @@ var Process = inherit({
     stop: function(cb) {
         var self = this;
         console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') arrêté');
+        self._ignoreError = true;
         if(self._stepCurrent) {
             self._stepCurrent.stop(function() {
                 self._running = false;
+                self._stepCurrent = null;
                 self.update({
                     state: Constants.STATE_STOPPED
                 }, cb);
@@ -140,12 +153,17 @@ var Process = inherit({
                 state: Constants.STATE_STOPPED
             }, cb);
         }
+        self.removeCache();
     },
     error: function(err) {
-        // TODO
+        if(this._ignoreError)
+            return;
+        this._ignoreError = true;
+        this._model3d.error(err);
     },
     done: function(cb) {
         var self = this;
+        self._ignoreError = true;
         console.info('[Process] Processus "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') terminé');
         self.update({
             state: Constants.STATE_STOPPED
@@ -159,9 +177,14 @@ var Process = inherit({
             self._stepCurrent = null;
             self._model3d.startNextProcess(cb);
         });
+    },
+    removeCache: function() {
+        Step.removeCache(this._attrs.id);
     }
 }, {
+    tabCachedModels: {},
     get: function(cond, model3d, cb) {
+        var self = this;
         var queryArgs = Utils.getQueryArgs(cond);
         sqlCon.query('SELECT p.*, sp.name, sp.library_directory, sp.library_name, sp.ordering FROM process p INNER JOIN spec_process sp ON p.spec_process_id=sp.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
@@ -171,13 +194,28 @@ var Process = inherit({
             }
             else {
                 var tabModels = _.map(rows, function(row) {
-                    // require met en cache les fichiers déjà chargés
-                    var ProcessObject = require('./process/' + row.library_directory + '/' + row.library_name + '.process');
-                    return new ProcessObject(row, model3d);
+                    if(self.tabCachedModels.hasOwnProperty(row.id))
+                        self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                    else {
+                        // require met en cache les fichiers déjà chargés
+                        var ProcessObject = require('./process/' + row.library_directory + '/' + row.library_name + '.process');
+                        self.tabCachedModels[row.id] = new ProcessObject(row, model3d);
+                    }
+                    return self.tabCachedModels[row.id];
                 });
                 cb(null, tabModels);
             }
         });
+    },
+    /**
+     * Pour pouvoir ré-utiliser les mêmes objects entre chaque pause, ils sont mis en cache dans des tableaux associatifs (en JavaScript, ce sont tout simplement des objets) : tabCachedModels
+     * On peut rencontrer les mêmes problèmes qu'en Java : tant qu'on garde une référence vers un objet, il ne sera pas nettoyé par le Garbage Collector : c'est donc le problème que résout cette fonction
+     */
+    removeCache: function(model3d) {
+        _.forEach(this.tabCachedModels, function(cachedModel, index) {
+            if(cachedModel._model3d == model3d)
+                delete this.tabCachedModels[index];
+        }, this);
     }
 });
 
