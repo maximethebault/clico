@@ -274,7 +274,8 @@ require 'server/php/libs/loadActiveRecord.php'
         <script src="FileUpload/js/jquery.fileupload-ui.js"></script>
 
         <script>
-            window.user_id = <?php echo intval($_SESSION['id']); ?>;</script>
+            window.user_id = <?php echo intval($_SESSION['id']); ?>;
+        </script>
 
         <script src="js/inherit.js"></script>
         <script src="js/node.js"></script>
