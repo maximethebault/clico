@@ -12,98 +12,77 @@ require 'server/php/libs/loadActiveRecord.php'
             </div>
             <?php include("navbar.php"); ?>
             <div id="hc_corps">
-                <ul class="nav nav-tabs" id="myTab">
-                    <li class="active"><a href="#nuages" data-toggle="tab">J'ai des nuages de points</a></li>
-                    <li><a href="#photos" data-toggle="tab">J'ai des photos</a></li>
-                </ul>
-
-                <div class="tab-content">
-                    <div class="model3d-selector">
-                        <h3>Partie Visualisation</h3>
-                        <img src="images/progress.png" style="width: 30%; margin: auto; display: block;"/>
-                        <table class="model3d-selector-table model3d-tracker">
-                            <tr>
-                                <td>
-                                    <?php
-                                    $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
-                                    $order = -1;
-                                    foreach($processes as $process) {
-                                        if($order < $process->ordering && $order !== -1) {
-                                            echo '</td><td>';
-                                        }
-                                        echo '<span id="' . $process->id . '" class="process">' . $process->name . '</span>';
-                                        $order = $process->ordering;
+                <div>
+                    <h3>1. Sélection des étapes</h3>
+                    <table class="model3d-selector-table model3d-form-selector">
+                        <tr>
+                            <td>
+                                <?php
+                                // TODO: replace 987654 by new model3d's actual ID
+                                $processes = SpecProcess::find('all', array('include' => 'specParam', 'order' => 'ordering ASC'));
+                                $order = -1;
+                                foreach($processes as $process) {
+                                    if($order < $process->ordering && $order !== -1) {
+                                        echo '</td><td>';
                                     }
-                                    ?>
-                                </td>
-                            </tr>
-                        </table>
-                        <div class="model3d-steps">
-                            <?php
-                            $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
-                            foreach($processes as $process) {
-                                echo '<div class="model3d-step ' . $process->id . '">';
-                                echo '<h1>' . $process->name . '</h1>';
-                                $i = 1;
-                                foreach($process->specStep as $step) {
-                                    echo '<span class="step-name">' . $i . '. ' . $step->name . '</span>';
-                                    ?>
-                                    <div class="progress progress-striped active">
-                                        <div class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 45%">
-                                        </div>
-                                    </div>
-                                    <?php
-                                    $i++;
+                                    echo '<span class="process" data-process-id="' . $process->id . '" data-model3d-id="987654">' . $process->name . '</span>';
+                                    $order = $process->ordering;
+                                }
+                                ?>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div>
+                    <h3>2. Paramétrage</h3>
+                    <ul class="nav nav-tabs model3d-form-params">
+                        <?php
+                        // TODO: replace 987654 by new model3d's actual ID
+                        foreach($processes as $process) {
+                            if($process->specParam) {
+                                echo '<li class="hidden"><a href=".model3d-form-param-tab-' . $process->id . '-987654" class="model3d-form-param-button-' . $process->id . '-987654" data-toggle="tab">' . $process->name . '</a></li>';
+                            }
+                        }
+                        ?>
+                    </ul>
+                    <div class="tab-content">
+                        <?php
+                        foreach($processes as $process) {
+                            $params = $process->specParam;
+                            if($params) {
+                                echo '<div class="tab-pane hidden fade model3d-form-param-tab-' . $process->id . '-987654">';
+                                foreach($params as $param) {
+                                    echo '<h3>' . $param->name . '</h3>';
+                                    echo '<span>Min : ' . $param->value_min . '</span><br />';
+                                    echo '<span>Max : ' . $param->value_max . '</span><br />';
+                                    echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
+                                    echo '<input type="number" class="model3d-form-param-' . $process->id . '-value"><br />';
                                 }
                                 echo '</div>';
                             }
-                            ?>
-                        </div>
-
-                        <h3>Partie Formulaire</h3>
-                        <form>
-                            <table class="model3d-selector-table model3d-form">
-                                <tr>
-                                    <td>
-                                        <?php
-                                        $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
-                                        $order = -1;
-                                        foreach($processes as $process) {
-                                            if($order < $process->ordering && $order !== -1) {
-                                                echo '</td><td>';
-                                            }
-                                            echo '<span id="' . $process->id . '" class="process">' . $process->name . '</span>';
-                                            $order = $process->ordering;
-                                        }
-                                        ?>
-                                    </td>
-                                </tr>
-                            </table>
-                        </form>
+                        }
+                        ?>
                     </div>
-                    <div class="tab-pane active" id="nuages">
-                        <br />
-                        <div style="width: 40%; min-height: 100px;">
-                            <div class="input-group">
-
-                                <span class="input-group-btn">
-                                    <span class="btn btn-primary btn-file">
-                                        Browse...
-                                        <input type="file" multiple>
-                                    </span>
-                                </span>
-                                <input type="text" class="form-control" readonly="">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tab-pane" id="photos">
-                        <button type="button" class="btn btn-info add-model3d">
-                            <i class="glyphicon glyphicon-cloud-upload"></i>
-                            <span>Ajouter un nouveau modèle 3D</span>
-                        </button>
-                        <div id="photos_in">
-
-                        </div>
+                </div>
+                <div>
+                    <h3>3. Envoi des fichiers</h3>
+                    <ul class="nav nav-tabs model3d-form-params">
+                        <?php
+                        // TODO: replace 987654 by new model3d's actual ID
+                        $files = SpecFile::find('all');
+                        foreach($files as $file) {
+                            echo '<li><a href=".model3d-form-file-tab-' . $file->id . '-987654" class="model3d-form-file-button-' . $file->id . '-987654" data-toggle="tab">' . $file->name . '</a></li>';
+                            // class="hidden"
+                        }
+                        ?>
+                    </ul>
+                    <div class="tab-content">
+                        <?php
+                        foreach($processes as $process) {
+                            var_dump($process->specFileInput);
+                            var_dump($process->specFileOutput);
+                        }
+                        ?>
                     </div>
                 </div>
             </div>
@@ -290,8 +269,7 @@ require 'server/php/libs/loadActiveRecord.php'
         <script src="FileUpload/js/jquery.fileupload-ui.js"></script>
 
         <script>
-            window.user_id = <?php echo intval($_SESSION['id']); ?>;
-        </script>
+            window.user_id = <?php echo intval($_SESSION['id']); ?>;</script>
 
         <script src="js/inherit.js"></script>
         <script src="js/node.js"></script>
@@ -311,28 +289,42 @@ require 'server/php/libs/loadActiveRecord.php'
                 var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
                 input.trigger('fileselect', [numFiles, label]);
             });
-
             $(document).ready(function() {
                 $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
                     console.log(numFiles);
                     console.log(label);
                 });
-                window.cnpao.View.Model3d.loadView();
-            });
-        </script>
+                //window.cnpao.View.Model3d.loadView();
+            });</script>
 
         <script>
-            $(".model3d-form span.process").click(function() {
-                var hasClass = false;
-                if($(this).hasClass("process-selected"))
-                    hasClass = true;
-                // on déselectionne tous les éléments de la cellule
-                $(this).parent().children('span.process').each(function() {
-                    $(this).removeClass("process-selected");
+            $(document).ready(function() {
+                $(".model3d-form-selector span.process").click(function() {
+                    var hasClass = false;
+                    if($(this).hasClass("process-selected"))
+                        hasClass = true;
+                    // on déselectionne tous les éléments de la cellule
+                    $(this).parent().children('span.process').each(function() {
+                        if($(this).hasClass("process-selected")) {
+                            $(document).trigger('process-hide', [$(this).data('process-id'), $(this).data('model3d-id')]);
+                            $(this).removeClass("process-selected");
+                        }
+                    });
+                    // on (dé)sélectionne celui sur lequel on vient de cliquer
+                    if(!hasClass) {
+                        $(document).trigger('process-show', [$(this).data('process-id'), $(this).data('model3d-id')]);
+                        $(this).addClass("process-selected");
+                    }
                 });
-                // on (dé)sélectionne celui sur lequel on vient de cliquer
-                if(!hasClass)
-                    $(this).addClass("process-selected");
+                $(document).on('process-hide', function(ev, processId, model3dId) {
+                    console.log('.model3d-form-param-tab-' + processId + '-' + model3dId);
+                    $('.model3d-form-param-button-' + processId + '-' + model3dId).parent().addClass('hidden');
+                    $('.model3d-form-param-tab-' + processId + '-' + model3dId).addClass('hidden');
+                });
+                $(document).on('process-show', function(ev, processId, model3dId) {
+                    $('.model3d-form-param-button-' + processId + '-' + model3dId).parent().removeClass('hidden');
+                    $('.model3d-form-param-tab-' + processId + '-' + model3dId).removeClass('hidden');
+                });
             });
         </script>
     </body>
