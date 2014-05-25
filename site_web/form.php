@@ -35,33 +35,38 @@ require 'server/php/libs/loadActiveRecord.php'
                 </div>
                 <div>
                     <h3>2. Paramétrage</h3>
-                    <ul class="nav nav-tabs model3d-form-params">
-                        <?php
-                        // TODO: replace 987654 by new model3d's actual ID
-                        foreach($processes as $process) {
-                            if($process->specParam) {
-                                echo '<li class="hidden"><a href=".model3d-form-param-tab-' . $process->id . '-987654" class="model3d-form-param-button-' . $process->id . '-987654" data-toggle="tab">' . $process->name . '</a></li>';
-                            }
-                        }
-                        ?>
-                    </ul>
-                    <div class="tab-content">
-                        <?php
-                        foreach($processes as $process) {
-                            $params = $process->specParam;
-                            if($params) {
-                                echo '<div class="tab-pane hidden fade model3d-form-param-tab-' . $process->id . '-987654">';
-                                foreach($params as $param) {
-                                    echo '<h3>' . $param->name . '</h3>';
-                                    echo '<span>Min : ' . $param->value_min . '</span><br />';
-                                    echo '<span>Max : ' . $param->value_max . '</span><br />';
-                                    echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
-                                    echo '<input type="number" class="model3d-form-param-' . $process->id . '-value"><br />';
+                    <div class="model3d-form-params-panel-<?php echo 987654; ?> hidden">
+                        <ul class="nav nav-tabs model3d-form-param-button-<?php echo 987654; ?>">
+                            <?php
+                            // TODO: replace 987654 by new model3d's actual ID
+                            foreach($processes as $process) {
+                                if(count($process->specParam)) {
+                                    echo '<li class="hidden"><a href=".model3d-form-param-tab-' . $process->id . '-987654" class="model3d-form-param-button-' . $process->id . '-987654" data-toggle="tab">' . $process->name . '</a></li>';
                                 }
-                                echo '</div>';
                             }
-                        }
-                        ?>
+                            ?>
+                        </ul>
+                        <div class="tab-content model3d-form-param-tab-<?php echo 987654; ?>">
+                            <?php
+                            foreach($processes as $process) {
+                                $params = $process->specParam;
+                                if(count($params)) {
+                                    echo '<div class="tab-pane hidden fade model3d-form-param-tab-' . $process->id . '-987654">';
+                                    foreach($params as $param) {
+                                        echo '<h3>' . $param->name . '</h3>';
+                                        echo '<span>Min : ' . $param->value_min . '</span><br />';
+                                        echo '<span>Max : ' . $param->value_max . '</span><br />';
+                                        echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
+                                        echo '<input type="number" class="model3d-form-param-' . $process->id . '-value"><br />';
+                                    }
+                                    echo '</div>';
+                                }
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    <div class="model3d-form-params-message-<?php echo 987654; ?>">
+                        Aucune étape à configurer !
                     </div>
                 </div>
                 <div>
@@ -317,13 +322,36 @@ require 'server/php/libs/loadActiveRecord.php'
                     }
                 });
                 $(document).on('process-hide', function(ev, processId, model3dId) {
-                    console.log('.model3d-form-param-tab-' + processId + '-' + model3dId);
                     $('.model3d-form-param-button-' + processId + '-' + model3dId).parent().addClass('hidden');
                     $('.model3d-form-param-tab-' + processId + '-' + model3dId).addClass('hidden');
+                    // si tous les onglets sont cachés, on affiche un message spécial :
+                    var toHide = true;
+                    $('.model3d-form-param-button-' + model3dId + ' li').each(function() {
+                        if(!$(this).hasClass('hidden')) {
+                            toHide = false;
+                            return false;
+                        }
+                    });
+                    if(toHide) {
+                        $('.model3d-form-params-panel-' + model3dId).addClass('hidden');
+                        $('.model3d-form-params-message-' + model3dId).removeClass('hidden');
+                    }
                 });
                 $(document).on('process-show', function(ev, processId, model3dId) {
                     $('.model3d-form-param-button-' + processId + '-' + model3dId).parent().removeClass('hidden');
                     $('.model3d-form-param-tab-' + processId + '-' + model3dId).removeClass('hidden');
+                    // si tous les onglets sont cachés, on affiche un message spécial :
+                    var toShow = false;
+                    $('.model3d-form-param-button-' + model3dId + ' li').each(function() {
+                        if(!$(this).hasClass('hidden')) {
+                            toShow = true;
+                            return false;
+                        }
+                    });
+                    if(toShow) {
+                        $('.model3d-form-params-panel-' + model3dId).removeClass('hidden');
+                        $('.model3d-form-params-message-' + model3dId).addClass('hidden');
+                    }
                 });
             });
         </script>
