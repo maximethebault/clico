@@ -2,6 +2,7 @@ var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
 var inherit = require('inherit');
+var _ = require('underscore');
 
 var StepDeleteEdges = inherit(Step, {
     __constructor: function(attrs, process) {
@@ -40,17 +41,9 @@ var StepDeleteEdges = inherit(Step, {
         self.__base(cb);
         self.kill();
     },
-    kill: function() {
-        var self = this;
-        self.clean(function() {
-            self.done(function(err) {
-                console.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') ne s\'est pas terminée normalement : ' + err + '.');
-            });
-        });
-    },
     error: function(err) {
         // si l'erreur est juste une chaîne de caractères et non un véritable objet Error, on la transforme
-        if(typeof err === 'string')
+        if(_.isString(err))
             err = new Error(err);
         // toutes les erreurs de cette Step seront fatales (provoque l'arrêt de l'ensemble du traitement)
         err.fatal = true;
@@ -69,6 +62,8 @@ var StepDeleteEdges = inherit(Step, {
                 if(cb)
                     cb();
             });
+        else if(cb)
+            cb();
     }
 });
 

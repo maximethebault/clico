@@ -32,6 +32,8 @@ var Constants = require('./Constants');
 var Model3d = inherit({
     __constructor: function(attrs) {
         this._attrs = attrs;
+        // TODO: créer le répertoire ci-dessous
+        this.basePath = 'data/' + attrs.id + '/';
         this.poolIdentifier = undefined;
         this.processCurrent = undefined;
         this.commandInProgress = false;
@@ -113,10 +115,12 @@ var Model3d = inherit({
             if(err) {
                 var message = '[Model3d] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
                 console.error(message);
-                cb(new Error(message), null);
+                if(cb)
+                    cb(new Error(message), null);
                 return;
             }
-            cb(null);
+            if(cb)
+                cb(null);
         });
     },
     /*
@@ -132,7 +136,8 @@ var Model3d = inherit({
         self.commandInProgress = true;
         if(self._attrs.state == Constants.STATE_STOPPED) {
             self.update({
-                command: Constants.COMMAND_STOP
+                command: Constants.COMMAND_STOP,
+                error: ''
             }, function() {
                 self.commandInProgress = false;
             });
@@ -158,6 +163,10 @@ var Model3d = inherit({
     startNextProcess: function(cb) {
         var self = this;
         self.process(function(err, processes) {
+            if(err) {
+                cb(err);
+                return;
+            }
             processes.sort(function(a, b) {
                 return a._attrs.ordering - b._attrs.ordering;
             });
@@ -235,6 +244,7 @@ var Model3d = inherit({
             return;
         self.commandInProgress = true;
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') arrêté');
+        // TODO: effacer tous les caches des Process, Step, File, Param
         if(self.processCurrent) {
             self.processCurrent.stop(function() {
                 self.__self.poolModel3d.release(self.poolIdentifier);
@@ -257,14 +267,20 @@ var Model3d = inherit({
                 self.commandInProgress = false;
             });
         }
+        self.removeCache();
     },
     /*
      * Signale une erreur avant de suspendre ou stopper le traitement
      * 
-     * @param {Error} err l'erreur rencontrée. Si elle est fatale (err.fatal === true), on stoppe le traitement, sinon, on se contente de le suspendre (pause)
+     * @param {Error} err l'erreur rencontrée. Si elle est fatale (err.fatal === true), on pause le traitement, sinon, on se contente d'enregistrer le warning
      */
     error: function(err) {
-        // TODO
+        this.update({error: err, command: Constants.COMMAND_PAUSE});
+        if(err.fatal)
+            this.pause(true, function(err) {
+                if(err)
+                    console.error('[Model3d] Traitement (ID = ' + this._attrs.id + ') n\'a pas pu être mis en pause après signalement d\'une erreur !');
+            });
     },
     /**
      * Réalise les traitements associés à la fin de génération d'un modèle
@@ -281,6 +297,12 @@ var Model3d = inherit({
             self.processCurrent = null;
             cb(err);
         });
+    },
+    removeCache: function() {
+        this.__self.removeCache(this._attrs.id);
+        Process.removeCache(this._attrs.id);
+        File.removeCache(this._attrs.id);
+        Param.removeCache(this._attrs.id);
     }
 }, {
     // l'intervalle en millisecondes entre chaque vérification pour de nouvelles générations à démarrer
@@ -299,7 +321,9 @@ var Model3d = inherit({
         max: 1,
         refreshIdle: false
     }),
+    tabCachedModels: {},
     get: function(cond, cb) {
+        var self = this;
         var queryArgs = Utils.getQueryArgs(cond);
         sqlCon.query('SELECT * FROM model3d WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
@@ -309,10 +333,21 @@ var Model3d = inherit({
                 return;
             }
             var tabModels = _.map(rows, function(row) {
-                return new Model3d(row);
+                if(self.tabCachedModels.hasOwnProperty(row.id))
+                    self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                else
+                    self.tabCachedModels[row.id] = new Model3d(row);
+                return self.tabCachedModels[row.id];
             });
             cb(null, tabModels);
         });
+    },
+    /**
+     * Pour pouvoir ré-utiliser les mêmes objects entre chaque pause, ils sont mis en cache dans des tableaux associatifs (en JavaScript, ce sont tout simplement des objets) : tabCachedModels
+     * On peut rencontrer les mêmes problèmes qu'en Java : tant qu'on garde une référence vers un objet, il ne sera pas nettoyé par le Garbage Collector : c'est donc le problème que résout cette fonction
+     */
+    removeCache: function(id) {
+        delete this.tabCachedModels[id];
     }
 });
 

@@ -2,13 +2,18 @@ var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
 var inherit = require('inherit');
+var _ = require('underscore');
 
 var StepDeleteEdges = inherit(Step, {
     __constructor: function(attrs, process) {
         this.__base(attrs, process);
         // l'objet qui contiendra l'appel à cloudcompare
         this.process = null;
+		var border = 5;
+		// TODO: permettre le choix de la border par l'utilisateur.
     },
+	
+	
     start: function() {
         var self = this;
 
@@ -20,9 +25,6 @@ var StepDeleteEdges = inherit(Step, {
         var splitInput = inputCloud.split('.');
         splitInput.pop();
         var outputFile = splitInput.join('.') + '_TEXTURED.obj';
-
-	var border = 5;
-	// TODO: permettre le choix de la border par l'utilisateur.
 
         self.process = spawn('MeshTexturer', ['-ccloud', inputCloud, '-mesh', inputMesh, '-tmesh', outputFile, '-width', '4096', '-height', '4096', '-k', '5', '-border', border, '-v']);
 
@@ -44,17 +46,9 @@ var StepDeleteEdges = inherit(Step, {
         self.__base(cb);
         self.kill();
     },
-    kill: function() {
-        var self = this;
-        self.clean(function() {
-            self.done(function(err) {
-                console.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') ne s\'est pas terminée normalement : ' + err + '.');
-            });
-        });
-    },
     error: function(err) {
         // si l'erreur est juste une chaîne de caractères et non un véritable objet Error, on la transforme
-        if(typeof err === 'string')
+        if(_.isString(err))
             err = new Error(err);
         // toutes les erreurs de cette Step seront fatales (provoque l'arrêt de l'ensemble du traitement)
         err.fatal = true;
@@ -73,6 +67,31 @@ var StepDeleteEdges = inherit(Step, {
                 if(cb)
                     cb();
             });
+        else if(cb)
+            cb();
+    }
+	
+
+	// vérifie que le paramètre border entré par l'utilisateur ne va pas faire planter la commande
+	// c'est le cas quand la console affiche "1 * 1 triangle edge"
+
+	processLine: function(line) {
+	var self = this;
+        if(this.__base(line)) {
+            var matches = /1 * 1 triangle/.exec(line);
+            if(matches) {
+                self.border--;
+                if(border >= 0) {
+					self.process.kill();
+				}
+				else {
+					// TODO: gérer le cas où border<0 (pas possible
+					self.process.error("error: border<0");
+				}
+            }
+            return true;
+        }
+        return false;
     }
 });
 

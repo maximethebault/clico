@@ -2,7 +2,6 @@ var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
 var inherit = require('inherit');
-var _ = require('underscore');
 
 /**
  * Fonction qui crée un fichier vide, ou écrase un fichier déjà existant
@@ -18,7 +17,7 @@ function create_file(file, cb) {
     });
 }
 
-var StepSpatialSubsampling = inherit(Step, {
+var StepResampling = inherit(Step, {
     __constructor: function(attrs, process) {
         this.__base(attrs, process);
         // contiendra le timeout de surveillance du fichier de sortie : si pas de changement pendant un laps de temps (@see constante watcherTimeout), on supposera que cloudcompare a fini son travail
@@ -34,18 +33,20 @@ var StepSpatialSubsampling = inherit(Step, {
             cb(err);
             var inputFile = 'input.ply';
 
+			var nb_points = 5000;
+			// TODO: passage du nombre de points en paramètre modifiable par l'utilisateur
+
             /*
              * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _SPATIAL_SUBSAMPLED + la nouvelle extension
              */
             var splitInput = inputFile.split('.');
             splitInput.pop();
-            var outputFile = splitInput.join('.') + '_SPATIAL_SUBSAMPLED.asc';
+            var outputFile = splitInput.join('.') + '_RESAMPLED.asc';
             // TODO: passage des noms de fichiers entre Process
-            // TODO: passage de la densité en paramètre modifiable par l'utilisateur
 
             // on force la création du fichier pour que fs.watch ne provoque pas d'erreur si le fichier n'existe pas
             create_file(outputFile, function() {
-                self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-PREC', '12', '-SEP', 'SPACE', '-O', inputFile, '-SS', 'SPATIAL', '0.1']);
+                self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-PREC', '12', '-SEP', 'SPACE', '-O', inputFile, '-SAMPLE_MESH', 'POINT', nb_points]);
                 self.process.on('error', self.error.bind(self));
                 self.watcher = fs.watch(outputFile, function(event) {
                     if(event == 'change') {
@@ -69,9 +70,17 @@ var StepSpatialSubsampling = inherit(Step, {
         self.__base(cb);
         self.kill();
     },
+    kill: function() {
+        var self = this;
+        self.clean(function() {
+            self.done(function(err) {
+                console.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') ne s\'est pas terminée normalement : ' + err + '.');
+            });
+        });
+    },
     error: function(err) {
         // si l'erreur est juste une chaîne de caractères et non un véritable objet Error, on la transforme
-        if(_.isString(err))
+        if(typeof err === 'string')
             err = new Error(err);
         // toutes les erreurs de cette Step seront fatales (provoque l'arrêt de l'ensemble du traitement)
         err.fatal = true;
@@ -94,8 +103,6 @@ var StepSpatialSubsampling = inherit(Step, {
                 if(cb)
                     cb();
             });
-        else if(cb)
-            cb();
     }
 }, {
     // si un fichier n'a pas bougé pendant ce laps de temps (en ms), on considérera que cloudcompare a fini de l'écrire et que son travail est terminé
