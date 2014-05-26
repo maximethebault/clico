@@ -6,14 +6,19 @@ if(!array_key_exists('id', $_SESSION))
 require_once '../../../config.php';
 require_once '../libs/loadActiveRecord.php';
 
+try {
 $param = new Param();
-$param->model3d_id = $_POST['model3d_id'];
-$param->name = $_POST['name'];
-$param->value = $_POST['value'];
+$param->model3d_id = intval($_POST['model3d_id']);
+$param->spec_param_id = intval($_POST['spec_param_id']);
+$param->value = intval($_POST['value']);
 $model3d = Model3d::find(intval($_POST['model3d_id']));
 if($model3d->membres_id == $_SESSION['id']) {
     $param->save();
     echo $param->to_json();
 }
 else
-    die('Vous n\'êtes pas autorisé à ajouter des paramètres à ce modèle.');
+    die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));
+}
+catch(Exception $e) {
+    die(json_encode(array('error' => 1, 'message' => "Erreur d'insertion en base de données !")));
+}

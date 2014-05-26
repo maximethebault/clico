@@ -22,7 +22,7 @@ var Step = inherit({
     update: function(fields, cb) {
         var self = this;
         // on met à jour les attributs de l'objet
-        self._attrs = _.extend(self._attrs, fields);
+        _.extend(self._attrs, fields);
         sqlCon.query('UPDATE step SET ? WHERE id=?', [fields, self._attrs.id], function(err) {
             if(err) {
                 var message = '[Step] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
@@ -155,7 +155,7 @@ var Step = inherit({
             else {
                 var tabModels = _.map(rows, function(row) {
                     if(self.tabCachedModels.hasOwnProperty(row.id))
-                        self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                        _.extend(self.tabCachedModels[row.id]._attrs, row);
                     else {
                         // require met en cache les fichiers déjà chargés
                         var StepObject = require('./process/' + process._attrs.library_directory + '/step/' + row.library_name + '.step');

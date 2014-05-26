@@ -18,7 +18,7 @@ $model3d = Model3d::find(intval($_POST['model3d_id']));
 if($model3d->membres_id == $_SESSION['id']) {
     try {
     $process->save();
-    echo $process->to_json();
+    echo $process->to_json(array('include' => array('specProcess' => array('only' => array('id', 'name', 'ordering'),'include' => array('specFileInput', 'specFileOutput')))));
     }
     catch(Exception $e) {
         die(json_encode(array('error' => 1, 'message' => "Erreur d'insertion en base de données ! (déjà un Process sous le même spec_process_id ?)")));

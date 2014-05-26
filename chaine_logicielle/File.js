@@ -19,7 +19,7 @@ var File = inherit({
     update: function(fields, cb) {
         var self = this;
         // on met à jour les attributs de l'objet
-        self._attrs = _.extend(self._attrs, fields);
+        _.extend(self._attrs, fields);
         sqlCon.query('UPDATE file SET ? WHERE id=?', [fields, self._attrs.id], function(err) {
             if(err) {
                 var message = '[File] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
@@ -53,7 +53,7 @@ var File = inherit({
                 var objModels = {};
                 _.each(rows, function(row) {
                     if(self.tabCachedModels.hasOwnProperty(row.id))
-                        self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                        _.extend(self.tabCachedModels[row.id]._attrs, row);
                     else
                         self.tabCachedModels[row.id] = new File(row, model3d);
                     var file = self.tabCachedModels[row.id];

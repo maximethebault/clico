@@ -49,6 +49,44 @@ window.cnpao.Model.Model3d = inherit({
             if(cb)
                 cb();
         });
+    },
+    /**
+     * A partir des Process associés au Model3d, renvoie un tableau d'IDs des File nécessaires
+     */
+    calculateFileDeps: function(cb) {
+        var self = this;
+        // premièrement, on récupère l'ensemble des Process associés à ce modèle :
+        window.cnpao.Model.Process.get(false, {model3d_id: self._attrs.id}, self, function(err, res) {
+            if(res) {
+                // on transforme le tableau des Process en tableau de SpecProcess
+                res = _.map(res, function(process) {
+                    return window.specProcesses[process._attrs.spec_process_id];
+                });
+                res.sort(function(a, b) {
+                    return a.ordering - b.ordering;
+                });
+                // contiendra la liste des dépendances à fournir par l'utilisateur, sous la forme d'une liste d'IDs de File
+                var deps = [];
+                // contiendra la liste des IDs de File rencontrés en output pendant le traitement
+                var globalOutput = [];
+                // l'algo est assez simple : dès qu'on n'a pas déjà rencontré l'input d'un Process en output d'un autre jusqu'alors, c'est que l'utilisateur doit le fournir !
+                _.forEach(res, function(specProcess) {
+                    _.forEach(specProcess.specFileInput, function(file) {
+                        if(globalOutput.indexOf(file.id) === -1) {
+                            deps.push(file.id);
+                            globalOutput.push(file.id);
+                        }
+                    });
+                    _.forEach(specProcess.specFileOutput, function(file) {
+                        if(globalOutput.indexOf(file.id) === -1)
+                            globalOutput.push(file.id);
+                    });
+                });
+                cb(err, deps);
+            }
+            else
+                cb(err, []);
+        });
     }
 },
 {

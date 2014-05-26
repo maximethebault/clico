@@ -25,6 +25,23 @@ window.cnpao.Model.Param = inherit({
                 cb();
         });
     },
+    update: function(attrs, cb) {
+        _.extend(this._attrs, attrs);
+        $.ajax({
+            url: 'server/php/ajax/param-update.php',
+            type: 'POST',
+            data: this._attrs
+        }).done(function(result) {
+            var resParsed = JSON.parse(result);
+            if(resParsed.hasOwnProperty('error') && resParsed.error != 0) {
+                if(cb)
+                    cb(resParsed.message);
+                return;
+            }
+            if(cb)
+                cb();
+        });
+    },
     del: function(cb) {
         var self = this;
         $.ajax({

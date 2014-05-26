@@ -88,7 +88,7 @@ var Model3d = inherit({
             cb = options;
             options = {};
         }
-        options = _.extend(options, {model3d_id: this._attrs.id});
+        _.extend(options, {model3d_id: this._attrs.id});
         File.get(options, this, cb);
     },
     param: function(options, cb) {
@@ -96,7 +96,7 @@ var Model3d = inherit({
             cb = options;
             options = {};
         }
-        options = _.extend(options, {model3d_id: this._attrs.id});
+        _.extend(options, {model3d_id: this._attrs.id});
         Param.get(options, this, cb);
     },
     process: function(options, cb) {
@@ -104,13 +104,13 @@ var Model3d = inherit({
             cb = options;
             options = {};
         }
-        options = _.extend(options, {model3d_id: this._attrs.id});
+        _.extend(options, {model3d_id: this._attrs.id});
         Process.get(options, this, cb);
     },
     update: function(fields, cb) {
         var self = this;
         // on met à jour les attributs de l'objet
-        self._attrs = _.extend(self._attrs, fields);
+        _.extend(self._attrs, fields);
         sqlCon.query('UPDATE model3d SET ? WHERE id=?', [fields, self._attrs.id], function(err) {
             if(err) {
                 var message = '[Model3d] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
@@ -334,7 +334,7 @@ var Model3d = inherit({
             }
             var tabModels = _.map(rows, function(row) {
                 if(self.tabCachedModels.hasOwnProperty(row.id))
-                    self.tabCachedModels[row.id]._attrs = _.extend(self.tabCachedModels[row.id]._attrs, row);
+                    _.extend(self.tabCachedModels[row.id]._attrs, row);
                 else
                     self.tabCachedModels[row.id] = new Model3d(row);
                 return self.tabCachedModels[row.id];

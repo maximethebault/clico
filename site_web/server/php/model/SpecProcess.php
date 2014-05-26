@@ -11,6 +11,7 @@ class SpecProcess extends ActiveRecord\Model
         array('specProcessOutput', 'class_name' => 'SpecProcessOutput', 'foreign_key' => 'spec_process_id'),
         array('specFileOutput', 'class_name' => 'SpecFile', 'through' => 'specProcessOutput'),
         array('specStep', 'class_name' => 'SpecStep', 'foreign_key' => 'spec_process_id', 'order' => 'ordering ASC'),
+        array('process', 'class_name' => 'Process', 'foreign_key' => 'spec_process_id')
     );
 
 }

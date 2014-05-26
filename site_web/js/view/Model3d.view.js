@@ -2,10 +2,44 @@ window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 window.cnpao.View.Model3d = inherit({
     __constructor: function(model) {
-        this.model = model;
+        var self = this;
+        self.model = model;
         $('#model3d-list').prepend(tmpl("template-model3d-form", {id: model._attrs.id}));
-        this.$el = $('.model3d-form-' + model._attrs.id);
-        this.bindEvents();
+        self.$el = $('.model3d-form-' + model._attrs.id);
+        self.bindEvents();
+        $('.model3d-form-file-tab-' + self.model._attrs.id + '>div').each(function() {
+            var maxFile = $(this).data('max-file');
+            var sfid = $(this).data('spec-file-id');
+            $('.fileupload', this).fileupload({
+                url: 'server/php/libs/UploadHandler/',
+                // lorsqu'on uploadera un fichier, on enverra avec l'ID du Model3d associé au fichier
+                formData: {mid: self.model._attrs.id},
+                dropZone: $('.fileupload', this),
+                disableImagePreview: true,
+                disableImageLoad: true,
+                disableImageHead: true,
+                disableExif: true,
+                disableExifThumbnail: true,
+                disableExifSub: true,
+                disableExifGps: true,
+                disableImageMetaDataLoad: true,
+                disableImageMetaDataSave: true,
+                disableAudioPreview: true,
+                disableVideoPreview: true,
+                acceptFileTypes: new RegExp('(\.|\/)('+(window.specFiles[sfid].extension.split(',')).join('|')+')$', 'i'),
+                maxChunkSize: 5000000, // 5 MB
+                maxNumberOfFiles: (maxFile !== 0) ? maxFile : undefined,
+                add: function(e, data) {
+                    var that = this;
+                    $.getJSON('server/php/libs/UploadHandler/', {file: data.files[0].name, mid: self.model._attrs.id, sfid: sfid}, function(result) {
+                        var file = result.file;
+                        data.uploadedBytes = file && file.size;
+                        $.blueimp.fileupload.prototype.options.add.call(that, e, data);
+                    });
+                }
+            });
+            $('.fileupload', this).fileupload('option', 'done').call($('.fileupload', this), $.Event('done'), {result: {files: self.model.files}});
+        });
 
         // on met un dollar devant le nom de la variable pour mettre en valeur le fait qu'elle est passée par jQuery
         /*this.$el = $('.uploader[data-id=' + model.id + ']');
@@ -48,7 +82,10 @@ window.cnpao.View.Model3d = inherit({
                 return;
             window.cnpao.Model.Process.get(false, {model3d_id: model3dId, spec_process_id: specProcessId}, self.model, function(err, res) {
                 if(res[0]) {
-                    res[0].del();
+                    res[0].del(function(err) {
+                        if(!err)
+                            self.hideAndSeekFiles();
+                    });
                 }
             });
         });
@@ -56,7 +93,10 @@ window.cnpao.View.Model3d = inherit({
             if(model3dId !== self.model._attrs.id)
                 return;
             var proc = new window.cnpao.Model.Process({model3d_id: model3dId, spec_process_id: specProcessId}, self.model);
-            proc.create();
+            proc.create(function(err) {
+                if(!err)
+                    self.hideAndSeekFiles();
+            });
         });
         $(document).on('param-change', function(ev, newValue, specParamId, model3dId) {
             if(model3dId !== self.model._attrs.id)
@@ -70,9 +110,28 @@ window.cnpao.View.Model3d = inherit({
                     });
                 }
                 else {
-                    var param = new window.cnpao.Model.Param({model3d_id: model3dId, spec_process_id: specParamId, value: newValue}, self.model);
+                    var param = new window.cnpao.Model.Param({model3d_id: model3dId, spec_param_id: specParamId, value: newValue}, self.model);
                     param.create();
                 }
+            });
+        });
+    },
+    /**
+     * Montre/cache les File s'ils sont nécessaires
+     */
+    hideAndSeekFiles: function() {
+        var self = this;
+        self.model.calculateFileDeps(function(err, toShow) {
+            console.log(toShow);
+            $('.model3d-form-file-button-' + self.model._attrs.id + '>li').each(function() {
+                $(this).addClass('hidden');
+            });
+            $('.model3d-form-file-tab-' + self.model._attrs.id + '>div').each(function() {
+                $(this).addClass('hidden');
+            });
+            _.forEach(toShow, function(id) {
+                $('.model3d-form-file-button-' + id + '-' + self.model._attrs.id).parent().removeClass('hidden');
+                $('.model3d-form-file-tab-' + id + '-' + self.model._attrs.id).removeClass('hidden');
             });
         });
     },

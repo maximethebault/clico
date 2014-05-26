@@ -56,20 +56,65 @@
     </div>
     <div>
         <h3>3. Envoi des fichiers</h3>
-        <ul class="nav nav-tabs model3d-form-params">
+        <ul class="nav nav-tabs model3d-form-file-button-{%=o.id%}">
             <?php
             $files = SpecFile::find('all');
             foreach($files as $file) {
-                echo '<li><a href=".model3d-form-file-tab-' . $file->id . '-{%=o.id%}" class="model3d-form-file-button-' . $file->id . '-{%=o.id%}" data-toggle="tab">' . $file->name . '</a></li>';
-                // class="hidden"
+                echo '<li class="model3d-form-file-button hidden"><a href=".model3d-form-file-tab-' . $file->id . '-{%=o.id%}" class="model3d-form-file-button-' . $file->id . '-{%=o.id%}" data-toggle="tab">' . $file->name . '</a></li>';
             }
             ?>
         </ul>
-        <div class="tab-content">
+        <div class="tab-content model3d-form-file-tab-{%=o.id%}">
             <?php
-            foreach($processes as $process) {
-                //var_dump($process->specFileInput);
-                //var_dump($process->specFileOutput);
+            foreach($files as $file) {
+                echo '<div class="tab-pane hidden fade model3d-form-file-tab model3d-form-file-tab-' . $file->id . '-{%=o.id%}" data-max-file="' . $file->multiplicity_max . '" data-spec-file-id="' . $file->id . '">';
+                ?>
+                <form class="fileupload" action="/" method="POST" enctype="multipart/form-data">
+                    <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
+                    <div class="row fileupload-buttonbar">
+                        <div class="col-lg-10">
+                            <!-- The fileinput-button span is used to style the file input field as button -->
+                            <span class="btn btn-success fileinput-button">
+                                <i class="glyphicon glyphicon-plus"></i>
+                                <span>Ajouter des fichiers...</span>
+                                <input type="file" name="files[]" multiple accept="<?php
+                                $exts = explode(',', $file->extension);
+                                foreach($exts as &$ext)
+                                    $ext = '.'.$ext;
+                                echo implode(',', $exts);
+                                ?>">
+                            </span>
+                            <button type="submit" class="btn btn-primary start">
+                                <i class="glyphicon glyphicon-upload"></i>
+                                <span>Démarrer l'envoi</span>
+                            </button>
+                            <button type="reset" class="btn btn-warning cancel">
+                                <i class="glyphicon glyphicon-ban-circle"></i>
+                                <span>Annuler l'envoi</span>
+                            </button>
+                            <button type="button" class="btn btn-danger delete">
+                                <i class="glyphicon glyphicon-trash"></i>
+                                <span>Supprimer</span>
+                            </button>
+                            <input type="checkbox" class="toggle">
+                            <!-- The global file processing state -->
+                            <span class="fileupload-process"></span>
+                        </div>
+                        <!-- The global progress state -->
+                        <div class="col-lg-5 fileupload-progress fade">
+                            <!-- The global progress bar -->
+                            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+                            </div>
+                            <!-- The extended global progress state -->
+                            <div class="progress-extended">&nbsp;</div>
+                        </div>
+                    </div>
+                    <!-- The table listing the files available for upload/download -->
+                    <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+                </form>
+                <?php
+                echo '</div>';
             }
             ?>
         </div>

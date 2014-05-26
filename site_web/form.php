@@ -207,6 +207,18 @@ require 'server/php/libs/loadActiveRecord.php'
 
         <script>
             window.user_id = <?php echo intval($_SESSION['id']); ?>;
+            window.specProcesses = {};
+            window.specFiles = {};
+            <?php
+            $specProcesses = SpecProcess::find('all');
+            foreach($specProcesses as $specProcess) {
+                echo 'window.specProcesses['.$specProcess->id.'] = '.$specProcess->to_json(array('only' => array('id', 'name', 'ordering'), 'include' => array('specFileInput', 'specFileOutput'))).';';
+            }
+            $specFiles = SpecFile::find('all');
+            foreach($specFiles as $specFile) {
+                echo 'window.specFiles['.$specFile->id.'] = '.$specFile->to_json().';';
+            }
+            ?>
         </script>
 
         <script src="js/inherit.js"></script>
