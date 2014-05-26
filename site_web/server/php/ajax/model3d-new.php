@@ -7,7 +7,6 @@ require_once '../../../config.php';
 require_once '../libs/loadActiveRecord.php';
 
 $model3d = new Model3d();
-$model3d->name = (!empty($_POST['name'])) ? $_POST['name'] : '';
 $model3d->membres_id = $_SESSION['id'];
 $model3d->save();
 echo $model3d->to_json();

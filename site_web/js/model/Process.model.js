@@ -1,44 +1,90 @@
 window.cnpao = window.cnpao || {Model: {}, View: {}};
 
-window.cnpao.Model.Process = inherit([window.cnpao.ProgressManager], {
-    __constructor: function() {
-        this.initProgressManager();
-        this.model3d_id = 0;
-        this.priority = 0;
-        this.command = window.cnpao.Model.Model3d.RUN;
-        //$(this).on('_record-id', this.setRecordId);
+window.cnpao.Model.Process = inherit({
+    __constructor: function(attrs, model3d) {
+        attrs = attrs || {};
+        this._attrs = _.defaults(attrs, this.__self.defaultAttrs);
+        this._model3d = model3d;
     },
-    launch: function() {
-        /*socket.send(this, {
-            action: 'vsfm-new',
-            images: images
-        });*/
-    },
-    create: function() {
+    create: function(cb) {
         var self = this;
         $.ajax({
             url: 'server/php/ajax/process-new.php',
             type: 'POST',
-            data: this.toJSON()
+            data: this._attrs
         }).done(function(result) {
             var resParsed = JSON.parse(result);
-            if(resParsed.hasOwnProperty('error') && resParsed.error != 0)
-                alert(resParsed.message);
+            if(resParsed.hasOwnProperty('error') && resParsed.error != 0) {
+                if(cb)
+                    cb(resParsed.message);
+                return;
+            }
+            self._attrs.id = resParsed.id;
+            self.__self.tabCachedModels[self._attrs.id] = self;
+            if(cb)
+                cb();
         });
     },
-    toJSON: function() {
-        return {
-            name: this.name,
-            model3d_id: this.model3d_id,
-            command: this.command,
-            priority: this.priority
-        };
+    del: function(cb) {
+        var self = this;
+        $.ajax({
+            url: 'server/php/ajax/process-del.php',
+            type: 'GET',
+            data: {id: self._attrs.id}
+        }).done(function(result) {
+            var resParsed = JSON.parse(result);
+            if(resParsed.hasOwnProperty('error') && resParsed.error != 0) {
+                if(cb)
+                    cb(resParsed.message);
+                return;
+            }
+            delete self.__self.tabCachedModels[self._attrs.id];
+            if(cb)
+                cb();
+        });
     }
 },
 {
-    loadModels: function(models) {
-        return _.map(models, function(process) {
-            return new window.cnpao.Model.Process(process);
-        });
+    defaultAttrs: {
+        id: 0,
+        state: window.cnpao.Constants.STATE_PAUSED
+    },
+    tabCachedModels: {},
+    get: function(refresh, conds, model3d, cb) {
+        var self = this;
+        if(refresh) {
+            $.ajax({
+                url: 'server/php/ajax/process-list.php',
+                type: 'GET',
+                data: conds
+            }).done(function(result) {
+                var resParsed = JSON.parse(result);
+                if(resParsed.hasOwnProperty('error') && resParsed.error != 0) {
+                    cb(resParsed.message);
+                    return;
+                }
+                var tabModels = _.map(resParsed, function(row) {
+                    if(self.tabCachedModels.hasOwnProperty(row.id))
+                        _.extend(self.tabCachedModels[row.id]._attrs, row);
+                    else
+                        self.tabCachedModels[row.id] = new window.cnpao.Model.Process(row, model3d);
+                    return self.tabCachedModels[row.id];
+                });
+                cb(null, tabModels);
+            });
+        }
+        else {
+            var ret = [];
+            _.forEach(self.tabCachedModels, function(model) {
+                var match = true;
+                _.forEach(conds, function(condValue, condKey) {
+                    if(model._attrs[condKey] !== condValue)
+                        match = false;
+                });
+                if(match)
+                    ret.push(model);
+            });
+            cb(null, ret);
+        }
     }
 });

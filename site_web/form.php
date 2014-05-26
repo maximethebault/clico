@@ -12,83 +12,11 @@ require 'server/php/libs/loadActiveRecord.php'
             </div>
             <?php include("navbar.php"); ?>
             <div id="hc_corps">
-                <div>
-                    <h3>1. Sélection des étapes</h3>
-                    <table class="model3d-selector-table model3d-form-selector">
-                        <tr>
-                            <td>
-                                <?php
-                                // TODO: replace 987654 by new model3d's actual ID
-                                $processes = SpecProcess::find('all', array('include' => 'specParam', 'order' => 'ordering ASC'));
-                                $order = -1;
-                                foreach($processes as $process) {
-                                    if($order < $process->ordering && $order !== -1) {
-                                        echo '</td><td>';
-                                    }
-                                    echo '<span class="process" data-process-id="' . $process->id . '" data-model3d-id="987654">' . $process->name . '</span>';
-                                    $order = $process->ordering;
-                                }
-                                ?>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                <div>
-                    <h3>2. Paramétrage</h3>
-                    <div class="model3d-form-params-panel-<?php echo 987654; ?> hidden">
-                        <ul class="nav nav-tabs model3d-form-param-button-<?php echo 987654; ?>">
-                            <?php
-                            // TODO: replace 987654 by new model3d's actual ID
-                            foreach($processes as $process) {
-                                if(count($process->specParam)) {
-                                    echo '<li class="hidden"><a href=".model3d-form-param-tab-' . $process->id . '-987654" class="model3d-form-param-button-' . $process->id . '-987654" data-toggle="tab">' . $process->name . '</a></li>';
-                                }
-                            }
-                            ?>
-                        </ul>
-                        <div class="tab-content model3d-form-param-tab-<?php echo 987654; ?>">
-                            <?php
-                            foreach($processes as $process) {
-                                $params = $process->specParam;
-                                if(count($params)) {
-                                    echo '<div class="tab-pane hidden fade model3d-form-param-tab-' . $process->id . '-987654">';
-                                    foreach($params as $param) {
-                                        echo '<h3>' . $param->name . '</h3>';
-                                        echo '<span>Min : ' . $param->value_min . '</span><br />';
-                                        echo '<span>Max : ' . $param->value_max . '</span><br />';
-                                        echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
-                                        echo '<input type="number" class="model3d-form-param-' . $process->id . '-value"><br />';
-                                    }
-                                    echo '</div>';
-                                }
-                            }
-                            ?>
-                        </div>
-                    </div>
-                    <div class="model3d-form-params-message-<?php echo 987654; ?>">
-                        Aucune étape à configurer !
-                    </div>
-                </div>
-                <div>
-                    <h3>3. Envoi des fichiers</h3>
-                    <ul class="nav nav-tabs model3d-form-params">
-                        <?php
-                        // TODO: replace 987654 by new model3d's actual ID
-                        $files = SpecFile::find('all');
-                        foreach($files as $file) {
-                            echo '<li><a href=".model3d-form-file-tab-' . $file->id . '-987654" class="model3d-form-file-button-' . $file->id . '-987654" data-toggle="tab">' . $file->name . '</a></li>';
-                            // class="hidden"
-                        }
-                        ?>
-                    </ul>
-                    <div class="tab-content">
-                        <?php
-                        foreach($processes as $process) {
-                            var_dump($process->specFileInput);
-                            var_dump($process->specFileOutput);
-                        }
-                        ?>
-                    </div>
+                <button type="button" class="btn btn-info btn-add-model3d">
+                    <i class="glyphicon glyphicon-cloud-upload"></i>
+                    <span>Ajouter un nouveau modèle 3D</span>
+                </button>
+                <div id="model3d-list">
                 </div>
             </div>
         </div>
@@ -96,6 +24,10 @@ require 'server/php/libs/loadActiveRecord.php'
 
 
 
+        <!-- Le template pour le formulaire d'ajout de nouveaux modèles 3d -->
+        <script id="template-model3d-form" type="text/x-tmpl">
+<?php include('form-template.php'); ?>
+        </script>
         <!-- The template to display files available for upload -->
         <script id="template-upload" type="text/x-tmpl">
             {% for (var i=0, file; file=o.files[i]; i++) { %}
@@ -278,12 +210,12 @@ require 'server/php/libs/loadActiveRecord.php'
         </script>
 
         <script src="js/inherit.js"></script>
+        <script src="js/Constants.js"></script>
         <script src="js/node.js"></script>
         <script src="js/Socket.js"></script>
         <script src="js/ProgressManager.js"></script>
         <script src="js/model/Model3d.model.js"></script>
         <script src="js/model/Process.model.js"></script>
-        <script src="js/model/SFM.model.js"></script>
         <script src="js/model/Param.model.js"></script>
         <script src="js/view/Params.view.js"></script>
         <script src="js/view/Model3d.view.js"></script>
@@ -301,11 +233,12 @@ require 'server/php/libs/loadActiveRecord.php'
                     console.log(label);
                 });
                 //window.cnpao.View.Model3d.loadView();
-            });</script>
+            });
+        </script>
 
         <script>
             $(document).ready(function() {
-                $(".model3d-form-selector span.process").click(function() {
+                $(document).on('click', '.model3d-form-selector span.process', function() {
                     var hasClass = false;
                     if($(this).hasClass("process-selected"))
                         hasClass = true;
@@ -322,9 +255,12 @@ require 'server/php/libs/loadActiveRecord.php'
                         $(this).addClass("process-selected");
                     }
                 });
-                $(document).on('process-hide', function(ev, processId, model3dId) {
-                    $('.model3d-form-param-button-' + processId + '-' + model3dId).parent().addClass('hidden');
-                    $('.model3d-form-param-tab-' + processId + '-' + model3dId).addClass('hidden');
+                $(document).on('change', '.model3d-form-param-value', function() {
+                    $(document).trigger('param-change', [$(this).val(), $(this).data('param-id'), $(this).data('model3d-id')]);
+                });
+                $(document).on('process-hide', function(ev, specProcessId, model3dId) {
+                    $('.model3d-form-param-button-' + specProcessId + '-' + model3dId).parent().addClass('hidden');
+                    $('.model3d-form-param-tab-' + specProcessId + '-' + model3dId).addClass('hidden');
                     // si tous les onglets sont cachés, on affiche un message spécial :
                     var toHide = true;
                     $('.model3d-form-param-button-' + model3dId + ' li').each(function() {
@@ -338,9 +274,9 @@ require 'server/php/libs/loadActiveRecord.php'
                         $('.model3d-form-params-message-' + model3dId).removeClass('hidden');
                     }
                 });
-                $(document).on('process-show', function(ev, processId, model3dId) {
-                    $('.model3d-form-param-button-' + processId + '-' + model3dId).parent().removeClass('hidden');
-                    $('.model3d-form-param-tab-' + processId + '-' + model3dId).removeClass('hidden');
+                $(document).on('process-show', function(ev, specProcessId, model3dId) {
+                    $('.model3d-form-param-button-' + specProcessId + '-' + model3dId).parent().removeClass('hidden');
+                    $('.model3d-form-param-tab-' + specProcessId + '-' + model3dId).removeClass('hidden');
                     // si tous les onglets sont cachés, on affiche un message spécial :
                     var toShow = false;
                     $('.model3d-form-param-button-' + model3dId + ' li').each(function() {
