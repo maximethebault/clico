@@ -1,5 +1,4 @@
 <?php
-
 /*
  * jQuery File Upload Plugin PHP Example 5.14
  * https://github.com/blueimp/jQuery-File-Upload
@@ -14,10 +13,10 @@
 error_reporting(E_ALL | E_STRICT);
 
 session_start();
-if(!array_key_exists('id', $_SESSION))
-    die;
-if(!array_key_exists('mid', $_REQUEST))
-    die('Id du modèle manquant');
+
+require 'UploadHandler.php';
+require_once '../../../../config.php';
+require_once '../loadActiveRecord.php';
 
 function get_full_url() {
     $https = !empty($_SERVER['HTTPS']) && strcasecmp($_SERVER['HTTPS'], 'on') === 0;
@@ -29,14 +28,39 @@ function get_full_url() {
                     $_SERVER['SERVER_PORT'] === 80 ? '' : ':' . $_SERVER['SERVER_PORT']))) .
             substr($_SERVER['SCRIPT_NAME'], 0, strrpos($_SERVER['SCRIPT_NAME'], '/'));
 }
-require 'UploadHandler.php';
-require_once '../../../../config.php';
-require_once '../loadActiveRecord.php';
-// TODO: vérifier si l'utilisateur a bien les droits sur ce modèle !
-$modelDataPath = 'data/' . intval($_REQUEST['mid']) . '/';
+if(!array_key_exists('id', $_SESSION))
+    die('{"files":[{"error":"Paramètre ID manquant !"}]}');
+if(!array_key_exists('model3d_id', $_REQUEST))
+    die('{"files":[{"error":"Paramètre MID manquant !"}]}');
+if(!array_key_exists('spec_file_id', $_REQUEST))
+    die('{"files":[{"error":"Paramètre SFID manquant !"}]}');
+
+try {
+    $model3d = Model3d::find(intval($_REQUEST['model3d_id']));
+    if($model3d->membres_id != $_SESSION['id'])
+        die('{"files":[{"error":"La session a expiré. Veuillez vous reconnecter"}]}');
+    $specFile = SpecFile::find(intval($_REQUEST['spec_file_id']));
+}
+catch(Exception $e) {
+    die('{"files":[{"error":"Le modèle 3D n\'existe plus."}]}');
+}
+
+$modelDataPath = 'data/' . intval($_REQUEST['model3d_id']) . '/';
 @mkdir($modelDataPath, 0777);
+
+$options = array(
+    'upload_dir' => '../../../../../' . $modelDataPath,
+    'upload_url' => '../' . $modelDataPath,
+    'script_url' => get_full_url() . '/?model3d_id=' . intval($_REQUEST['model3d_id']) . '&spec_file_id=' . intval($_REQUEST['spec_file_id'])
+);
+
+if($specFile->multiplicity_max)
+    $options['max_number_of_files'] = $specFile->multiplicity_max;
+
+$options['accept_file_types'] = '`(\.|\/)(' . implode('|', explode(',', $specFile->extension)) . ')$`';
+
 if(array_key_exists('file', $_GET)) {
-    $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['mid']), $modelDataPath . $_GET['file'])));
+    $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['model3d_id']), $modelDataPath . $_GET['file'])));
     if($_SERVER['REQUEST_METHOD'] == 'DELETE') {
         if($file)
             $file->delete();
@@ -44,13 +68,13 @@ if(array_key_exists('file', $_GET)) {
             die;
     }
 }
-$upload_handler = new UploadHandler(array('upload_dir' => '../../../../../' . $modelDataPath, 'upload_url' => '../' . $modelDataPath, 'script_url' => get_full_url() . '/?mid=' . intval($_REQUEST['mid'])));
+$upload_handler = new UploadHandler($options);
 if($filePath = $upload_handler->getFileResult()) {
     if($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['mid']), $modelDataPath . $filePath)));
+        $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['model3d_id']), $modelDataPath . $filePath)));
         if(!$file) {
             $file = new File();
-            $file->model3d_id = intval($_REQUEST['mid']);
+            $file->model3d_id = intval($_REQUEST['model3d_id']);
             $file->path = $modelDataPath . $filePath;
             $file->incomplete = $upload_handler->getFileIncomplete();
             $file->size = $upload_handler->getFileSize();

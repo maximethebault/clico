@@ -1,4 +1,4 @@
-<div class="model3d-form-{%=o.id%}">
+<div class="model3d-form-{%=o.id%}" style="position: relative; border: #aaaaaa solid 1px; border-radius: 20px; margin: 20px; padding: 20px;">
     <div>
         <h3>1. Sélection des étapes</h3>
         <table class="model3d-selector-table model3d-form-selector">
@@ -11,7 +11,7 @@
                         if($order < $process->ordering && $order !== -1) {
                             echo '</td><td>';
                         }
-                        echo '<span class="process" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}">' . $process->name . '</span>';
+                        echo '<span class="process{% if(o.processSelected['.$process->id.']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}">' . $process->name . '</span>';
                         $order = $process->ordering;
                     }
                     ?>
@@ -21,12 +21,12 @@
     </div>
     <div>
         <h3>2. Paramétrage</h3>
-        <div class="model3d-form-params-panel-{%=o.id%} hidden">
+        <div class="model3d-form-params-panel-{%=o.id%}{% if(!o.processAvailable) { %} hidden{% } %}">
             <ul class="nav nav-tabs model3d-form-param-button-{%=o.id%}">
                 <?php
                 foreach($processes as $process) {
                     if(count($process->specParam)) {
-                        echo '<li class="hidden"><a href=".model3d-form-param-tab-' . $process->id . '-{%=o.id%}" class="model3d-form-param-button-' . $process->id . '-{%=o.id%}" data-toggle="tab">' . $process->name . '</a></li>';
+                        echo '<li class="{% if(!o.processSelected['.$process->id.']) { %}hidden{% } %}"><a href=".model3d-form-param-tab-' . $process->id . '-{%=o.id%}" class="model3d-form-param-button-' . $process->id . '-{%=o.id%}" data-toggle="tab">' . $process->name . '</a></li>';
                     }
                 }
                 ?>
@@ -36,13 +36,13 @@
                 foreach($processes as $process) {
                     $params = $process->specParam;
                     if(count($params)) {
-                        echo '<div class="tab-pane hidden fade model3d-form-param-tab-' . $process->id . '-{%=o.id%}">';
+                        echo '<div class="tab-pane{% if(!o.processSelected['.$process->id.']) { %} hidden{% } %} fade model3d-form-param-tab-' . $process->id . '-{%=o.id%}">';
                         foreach($params as $param) {
-                            echo '<h3>' . $param->name . '</h3>';
+                            echo '<h4>' . $param->name . '</h4>';
                             echo '<span>Min : ' . $param->value_min . '</span><br />';
                             echo '<span>Max : ' . $param->value_max . '</span><br />';
                             echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
-                            echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br />';
+                            echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" value="{%=o.paramValue['.$param->id.']%}" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br /><br />';
                         }
                         echo '</div>';
                     }
@@ -50,7 +50,7 @@
                 ?>
             </div>
         </div>
-        <div class="model3d-form-params-message-{%=o.id%}">
+        <div class="model3d-form-params-message-{%=o.id%}{% if(o.processAvailable) { %} hidden{% } %}">
             Aucune étape à configurer !
         </div>
     </div>
@@ -80,7 +80,7 @@
                                 <input type="file" name="files[]" multiple accept="<?php
                                 $exts = explode(',', $file->extension);
                                 foreach($exts as &$ext)
-                                    $ext = '.'.$ext;
+                                    $ext = '.' . $ext;
                                 echo implode(',', $exts);
                                 ?>">
                             </span>
@@ -112,6 +112,7 @@
                     </div>
                     <!-- The table listing the files available for upload/download -->
                     <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+                    <div class="hidden interrupt-warning"><span class="label label-warning">Attention</span> L'envoi de certains fichiers a été interrompu. Pour reprendre l'envoi, ajoutez les fichiers de nouveau.</div>
                 </form>
                 <?php
                 echo '</div>';
@@ -119,4 +120,32 @@
             ?>
         </div>
     </div>
+    <div class="modal fade model3d-config-modal-{%=o.id%}" tabindex="-1" role="dialog" aria-labelledby="model3d-config-modal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="model3d-config-modal">Lancement</h4>
+                </div>
+            
+                <div class="modal-body">
+                    <p>Vous êtes sur le point de lancer la génération d'un modèle.<br />
+                        Une fois lancé, il ne sera plus configurable.</p>
+                    <p>Voulez-vous continuer ?</p>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Non</button>
+                    <button type="button" class="btn btn-primary primary model3d-config-modal-btn" data-dismiss="modal">Oui</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br /><br />
+    <button type="button" class="btn btn-success btn-model3d-generate" style="position: absolute; right: 10px;" data-toggle="modal" data-target=".model3d-config-modal-{%=o.id%}">
+        <i class="glyphicon glyphicon-cloud-upload"></i>
+        <span>Générer modèle 3D</span>
+    </button>
+    <br />
 </div>

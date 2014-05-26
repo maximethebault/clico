@@ -244,7 +244,7 @@ require 'server/php/libs/loadActiveRecord.php'
                     console.log(numFiles);
                     console.log(label);
                 });
-                //window.cnpao.View.Model3d.loadView();
+                window.cnpao.View.Model3d.loadView();
             });
         </script>
 

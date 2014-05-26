@@ -4,76 +4,77 @@ window.cnpao.View.Model3d = inherit({
     __constructor: function(model) {
         var self = this;
         self.model = model;
-        $('#model3d-list').prepend(tmpl("template-model3d-form", {id: model._attrs.id}));
-        self.$el = $('.model3d-form-' + model._attrs.id);
-        self.bindEvents();
-        $('.model3d-form-file-tab-' + self.model._attrs.id + '>div').each(function() {
-            var maxFile = $(this).data('max-file');
-            var sfid = $(this).data('spec-file-id');
-            $('.fileupload', this).fileupload({
-                url: 'server/php/libs/UploadHandler/',
-                // lorsqu'on uploadera un fichier, on enverra avec l'ID du Model3d associé au fichier
-                formData: {mid: self.model._attrs.id},
-                dropZone: $('.fileupload', this),
-                disableImagePreview: true,
-                disableImageLoad: true,
-                disableImageHead: true,
-                disableExif: true,
-                disableExifThumbnail: true,
-                disableExifSub: true,
-                disableExifGps: true,
-                disableImageMetaDataLoad: true,
-                disableImageMetaDataSave: true,
-                disableAudioPreview: true,
-                disableVideoPreview: true,
-                acceptFileTypes: new RegExp('(\.|\/)('+(window.specFiles[sfid].extension.split(',')).join('|')+')$', 'i'),
-                maxChunkSize: 5000000, // 5 MB
-                maxNumberOfFiles: (maxFile !== 0) ? maxFile : undefined,
-                add: function(e, data) {
-                    var that = this;
-                    $.getJSON('server/php/libs/UploadHandler/', {file: data.files[0].name, mid: self.model._attrs.id, sfid: sfid}, function(result) {
-                        var file = result.file;
-                        data.uploadedBytes = file && file.size;
-                        $.blueimp.fileupload.prototype.options.add.call(that, e, data);
-                    });
-                }
+        var templateData = {
+            id: model._attrs.id,
+            processSelected: {},
+            paramSelected: {},
+            paramValue: {}
+        };
+        window.cnpao.Model.Process.get(false, {model3d_id: self.model._attrs.id}, self.model, function(err, res) {
+            if(_.size(res))
+                templateData.processAvailable = true;
+            _.forEach(res, function(process) {
+                templateData.processSelected[process._attrs.spec_process_id] = true;
             });
-            $('.fileupload', this).fileupload('option', 'done').call($('.fileupload', this), $.Event('done'), {result: {files: self.model.files}});
+            window.cnpao.Model.Param.get(false, {model3d_id: self.model._attrs.id}, self.model, function(err, res) {
+                _.forEach(res, function(param) {
+                    templateData.paramSelected[param._attrs.spec_file_id] = true;
+                    templateData.paramValue[param._attrs.spec_param_id] = param._attrs.value;
+                });
+                $('#model3d-list').prepend(tmpl("template-model3d-form", templateData));
+                self.hideAndSeekFiles();
+                self.$el = $('.model3d-form-' + model._attrs.id);
+                self.bindEvents();
+                $('.model3d-form-file-tab-' + self.model._attrs.id + '>div').each(function() {
+                    var maxFile = $(this).data('max-file');
+                    var sfid = $(this).data('spec-file-id');
+                    var $this = $(this);
+                    _.defer(function() {
+                        $('.fileupload', $this).fileupload({
+                            url: 'server/php/libs/UploadHandler/',
+                            // lorsqu'on uploadera un fichier, on enverra avec l'ID du Model3d associé au fichier
+                            formData: {model3d_id: self.model._attrs.id, spec_file_id: sfid},
+                            dropZone: $('.fileupload', $this),
+                            disableImagePreview: true,
+                            disableImageLoad: true,
+                            disableImageHead: true,
+                            disableExif: true,
+                            disableExifThumbnail: true,
+                            disableExifSub: true,
+                            disableExifGps: true,
+                            disableImageMetaDataLoad: true,
+                            disableImageMetaDataSave: true,
+                            disableAudioPreview: true,
+                            disableVideoPreview: true,
+                            acceptFileTypes: new RegExp('(\.|\/)(' + (window.specFiles[sfid].extension.split(',')).join('|') + ')$', 'i'),
+                            maxChunkSize: 5000000, // 5 MB
+                            maxNumberOfFiles: (maxFile !== 0) ? maxFile : undefined,
+                            add: function(e, data) {
+                                var that = this;
+                                $.getJSON('server/php/libs/UploadHandler/', {file: data.files[0].name, model3d_id: self.model._attrs.id, spec_file_id: sfid}, function(result) {
+                                    var file = result.file;
+                                    data.uploadedBytes = file && file.size;
+                                    $.blueimp.fileupload.prototype.options.add.call(that, e, data);
+                                });
+                            }
+                        }).on('fileuploadchunkfail', function() {
+                            $('.interrupt-warning', $this).removeClass('hidden');
+                        });
+                        var filesToShow = [];
+                        var incompleteFile = false;
+                        _.forEach(self.model._attrs.files, function(file) {
+                            if(!file.incomplete)
+                                filesToShow.push(file);
+                            else
+                                incompleteFile = true;
+                        });
+                        $('.fileupload', $this).fileupload('option', 'done').call($('.fileupload', $this), $.Event('done'), {result: {files: filesToShow}});
+                        if(incompleteFile)
+                            $('.interrupt-warning', $this).removeClass('hidden');
+                    });
+                });
+            });
         });
-
-        // on met un dollar devant le nom de la variable pour mettre en valeur le fait qu'elle est passée par jQuery
-        /*this.$el = $('.uploader[data-id=' + model.id + ']');
-         $('.fileupload', this.$el).fileupload({
-         url: 'server/php/libs/UploadHandler/',
-         // lorsqu'on uploadera un fichier, on enverra avec l'ID du Model3d associé au fichier
-         formData: {mid: model.id},
-         dropZone: $('.fileupload', this.$el),
-         disableImagePreview: true,
-         disableImageLoad: true,
-         disableImageHead: true,
-         disableExif: true,
-         disableExifThumbnail: true,
-         disableExifSub: true,
-         disableExifGps: true,
-         disableImageMetaDataLoad: true,
-         disableImageMetaDataSave: true,
-         disableAudioPreview: true,
-         disableVideoPreview: true,
-         maxChunkSize: 5000000, // 5 MB
-         add: function(e, data) {
-         var that = this;
-         $.getJSON('server/php/libs/UploadHandler/', {file: data.files[0].name, mid: model.id}, function(result) {
-         var file = result.file;
-         data.uploadedBytes = file && file.size;
-         $.blueimp.fileupload.prototype
-         .options.add.call(that, e, data);
-         });
-         }
-         });
-         $('.fileupload', this.$el).fileupload('option', 'done').call($('.fileupload', this.$el), $.Event('done'), {result: {files: this.model.files}});
-         this.bindEvents();
-         
-         this.params = new window.cnpao.View.Params(this.model.params, this);*/
     },
     bindEvents: function() {
         var self = this;
@@ -115,6 +116,12 @@ window.cnpao.View.Model3d = inherit({
                 }
             });
         });
+        $('.btn-model3d-generate', self.$el).on('click', function() {
+            
+        });
+    },
+    unbindEvents: function() {
+        
     },
     /**
      * Montre/cache les File s'ils sont nécessaires
@@ -122,7 +129,6 @@ window.cnpao.View.Model3d = inherit({
     hideAndSeekFiles: function() {
         var self = this;
         self.model.calculateFileDeps(function(err, toShow) {
-            console.log(toShow);
             $('.model3d-form-file-button-' + self.model._attrs.id + '>li').each(function() {
                 $(this).addClass('hidden');
             });
@@ -154,15 +160,15 @@ window.cnpao.View.Model3d = inherit({
         });
     },
     loadView: function() {
-        /*window.cnpao.Model.Model3d.loadAjax(function(err, models) {
-         if(err) {
-         // TODO: afficher un message d'erreur si le chargement a échoué
-         return;
-         }
-         _.forEach(models, function(model) {
-         new window.cnpao.View.Model3d(model);
-         });
-         });*/
+        window.cnpao.Model.Model3d.get(true, null, function(err, models) {
+            if(err) {
+                // TODO: afficher un message d'erreur si le chargement a échoué
+                return;
+            }
+            _.forEach(models, function(model) {
+                new window.cnpao.View.Model3d(model);
+            });
+        });
     }
 });
 

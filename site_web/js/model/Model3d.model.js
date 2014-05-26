@@ -112,11 +112,7 @@ window.cnpao.Model.Model3d = inherit({
                     return;
                 }
                 var tabModels = _.map(resParsed, function(row) {
-                    if(self.tabCachedModels.hasOwnProperty(row.id))
-                        _.extend(self.tabCachedModels[row.id]._attrs, row);
-                    else
-                        self.tabCachedModels[row.id] = new window.cnpao.Model.Model3d(row);
-                    return self.tabCachedModels[row.id];
+                    return self.insert(row);
                 });
                 cb(null, tabModels);
             });
@@ -134,5 +130,25 @@ window.cnpao.Model.Model3d = inherit({
             });
             cb(null, ret);
         }
+    },
+    insert: function(row) {
+        var self = this;
+        if(row.processes) {
+            _.forEach(row.processes, function(process) {
+                window.cnpao.Model.Process.insert(process);
+            });
+            row.processes = null;
+        }
+        if(row.params) {
+            _.forEach(row.params, function(param) {
+                window.cnpao.Model.Param.insert(param);
+            });
+            row.params = null;
+        }
+        if(self.tabCachedModels.hasOwnProperty(row.id))
+            _.extend(self.tabCachedModels[row.id]._attrs, row);
+        else
+            self.tabCachedModels[row.id] = new window.cnpao.Model.Model3d(row);
+        return self.tabCachedModels[row.id];
     }
 });
