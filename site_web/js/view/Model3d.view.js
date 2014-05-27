@@ -18,7 +18,7 @@ window.cnpao.View.Model3d = inherit({
             });
             window.cnpao.Model.Param.get(false, {model3d_id: self.model._attrs.id}, self.model, function(err, res) {
                 _.forEach(res, function(param) {
-                    templateData.paramSelected[param._attrs.spec_file_id] = true;
+                    templateData.paramSelected[param._attrs.spec_param_id] = true;
                     templateData.paramValue[param._attrs.spec_param_id] = param._attrs.value;
                 });
                 $('#model3d-list').prepend(tmpl("template-model3d-form", templateData));
