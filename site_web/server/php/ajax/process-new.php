@@ -15,15 +15,16 @@ $process->model3d_id = intval($_POST['model3d_id']);
 $process->state = intval($_POST['state']);
 $process->spec_process_id = intval($_POST['spec_process_id']);
 $model3d = Model3d::find(intval($_POST['model3d_id']));
-if($model3d->membres_id == $_SESSION['id']) {
+if($model3d->membres_id != $_SESSION['id'])
+    die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));
+elseif($model3d->configured)
+    die(json_encode(array('error' => 1, 'message' => "Ce modèle 3D n'est plus configurable !")));
+else {
     try {
-    $process->save();
-    echo $process->to_json(array('include' => array('specProcess' => array('only' => array('id', 'name', 'ordering'),'include' => array('specFileInput', 'specFileOutput')))));
+        $process->save();
+        echo $process->to_json(array('include' => array('specProcess' => array('only' => array('id', 'name', 'ordering'), 'include' => array('specFileInput', 'specFileOutput')))));
     }
     catch(Exception $e) {
         die(json_encode(array('error' => 1, 'message' => "Erreur d'insertion en base de données ! (déjà un Process sous le même spec_process_id ?)")));
     }
-}
-else {
-    die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));
 }

@@ -39,6 +39,8 @@ try {
     $model3d = Model3d::find(intval($_REQUEST['model3d_id']));
     if($model3d->membres_id != $_SESSION['id'])
         die('{"files":[{"error":"La session a expiré. Veuillez vous reconnecter"}]}');
+    elseif($model3d->configured)
+        die('{"files":[{"error":"Ce modèle 3D n\'est plus configurable !"}]}');
     $specFile = SpecFile::find(intval($_REQUEST['spec_file_id']));
 }
 catch(Exception $e) {

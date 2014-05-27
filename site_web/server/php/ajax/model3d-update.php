@@ -14,15 +14,6 @@ if($model3d->membres_id == $_SESSION['id']) {
     if(array_key_exists('command', $_POST))
         $model3d->command = $_POST['command'];
     $model3d->save();
-    if(array_key_exists('params', $_POST)) {
-        foreach($_POST['params'] as $paramRaw) {
-            $param = new Param();
-            $param->model3d_id = $model3d->id;
-            $param->name = $paramRaw['name'];
-            $param->value = $paramRaw['value'];
-            $param->save();
-        }
-    }
     echo $model3d->to_json(array('include' => 'params'));
 }
 else {

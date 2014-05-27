@@ -8,13 +8,14 @@ require_once '../libs/loadActiveRecord.php';
 
 try {
     $process = Process::find(intval($_GET['id']));
-    if($process->model3d->membres_id == $_SESSION['id']) {
+    if($process->model3d->membres_id != $_SESSION['id'])
+        die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));
+    elseif($process->model3d->configured)
+        die(json_encode(array('error' => 1, 'message' => "Ce modèle 3D n'est plus configurable !")));
+    else {
         // TODO: supprimer tout ce qui est associé : files, process & leurs propres Step, etc.
         $process->delete();
         echo json_encode(array('error' => 0));
-    }
-    else {
-        die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));
     }
 }
 catch(Exception $e) {
