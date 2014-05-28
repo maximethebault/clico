@@ -21,7 +21,7 @@ window.cnpao.Model.Model3d = inherit({
             data: this._attrs
         }).done(function(result) {
             var resParsed = JSON.parse(result);
-            if(resParsed.hasOwnProperty('error') && resParsed.error != 0) {
+            if(resParsed.hasOwnProperty('error') && resParsed.error !== 0) {
                 if(cb)
                     cb(resParsed.message);
                 return;
@@ -40,12 +40,30 @@ window.cnpao.Model.Model3d = inherit({
             data: {id: self._attrs.id}
         }).done(function(result) {
             var resParsed = JSON.parse(result);
-            if(resParsed.hasOwnProperty('error') && resParsed.error != 0) {
+            if(resParsed.hasOwnProperty('error') && resParsed.error !== 0) {
                 if(cb)
                     cb(resParsed.message);
                 return;
             }
             delete self.__self.tabCachedModels[self._attrs.id];
+            if(cb)
+                cb();
+        });
+    },
+    validate: function(cb) {
+        var self = this;
+        $.ajax({
+            url: 'server/php/ajax/model3d-validate.php',
+            type: 'GET',
+            data: {id: self._attrs.id}
+        }).done(function(result) {
+            var resParsed = JSON.parse(result);
+            if(resParsed.hasOwnProperty('error') && resParsed.error !== 0) {
+                if(cb)
+                    cb(resParsed.message);
+                return;
+            }
+            self._attrs.configured = true;
             if(cb)
                 cb();
         });
@@ -122,7 +140,9 @@ window.cnpao.Model.Model3d = inherit({
             _.forEach(self.tabCachedModels, function(model) {
                 var match = true;
                 _.forEach(conds, function(condValue, condKey) {
-                    if(model._attrs[condKey] !== condValue)
+                    if(!_.isArray(condValue))
+                        condValue = [condValue];
+                    if(condValue.indexOf(model._attrs[condKey]) === -1)
                         match = false;
                 });
                 if(match)

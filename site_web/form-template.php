@@ -120,13 +120,13 @@
             ?>
         </div>
     </div>
-    <div class="modal fade model3d-config-modal-{%=o.id%}" tabindex="-1" role="dialog" aria-labelledby="model3d-config-modal" aria-hidden="true">
+    <div class="modal fade model3d-config-modal-{%=o.id%}" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
             
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="model3d-config-modal">Lancement</h4>
+                    <h4 class="modal-title">Lancement</h4>
                 </div>
             
                 <div class="modal-body">
@@ -137,12 +137,13 @@
                 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Non</button>
-                    <button type="button" class="btn btn-primary primary model3d-config-modal-btn" data-dismiss="modal">Oui</button>
+                    <button type="button" class="btn btn-primary primary model3d-config-modal-btn">Oui</button>
                 </div>
             </div>
         </div>
     </div>
     <br /><br />
+    <div class="model3d-validation-error hidden" style="position: absolute; margin-top: 7px;"><span class="label label-danger">Erreur</span> <span class="model3d-validation-error-message">Fichier non fourni.</span></div>
     <button type="button" class="btn btn-success btn-model3d-generate" style="position: absolute; right: 10px;" data-toggle="modal" data-target=".model3d-config-modal-{%=o.id%}">
         <i class="glyphicon glyphicon-cloud-upload"></i>
         <span>Générer modèle 3D</span>

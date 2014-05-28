@@ -28,6 +28,10 @@ require 'server/php/libs/loadActiveRecord.php'
         <script id="template-model3d-form" type="text/x-tmpl">
 <?php include('form-template.php'); ?>
         </script>
+        <!-- Le template pour le suivi de progression des modèles 3d -->
+        <script id="template-model3d-progress" type="text/x-tmpl">
+<?php include('progress-template.php'); ?>
+        </script>
         <!-- The template to display files available for upload -->
         <script id="template-upload" type="text/x-tmpl">
             {% for (var i=0, file; file=o.files[i]; i++) { %}
@@ -206,19 +210,19 @@ require 'server/php/libs/loadActiveRecord.php'
         <script src="FileUpload/js/jquery.fileupload-ui.js"></script>
 
         <script>
-            window.user_id = <?php echo intval($_SESSION['id']); ?>;
-            window.specProcesses = {};
-            window.specFiles = {};
-            <?php
-            $specProcesses = SpecProcess::find('all');
-            foreach($specProcesses as $specProcess) {
-                echo 'window.specProcesses['.$specProcess->id.'] = '.$specProcess->to_json(array('only' => array('id', 'name', 'ordering'), 'include' => array('specFileInput', 'specFileOutput'))).';';
-            }
-            $specFiles = SpecFile::find('all');
-            foreach($specFiles as $specFile) {
-                echo 'window.specFiles['.$specFile->id.'] = '.$specFile->to_json().';';
-            }
-            ?>
+window.user_id = <?php echo intval($_SESSION['id']); ?>;
+window.specProcesses = {};
+window.specFiles = {};
+<?php
+$specProcesses = SpecProcess::find('all');
+foreach($specProcesses as $specProcess) {
+    echo 'window.specProcesses[' . $specProcess->id . '] = ' . $specProcess->to_json(array('only' => array('id', 'name', 'ordering'), 'include' => array('specFileInput', 'specFileOutput'))) . ';';
+}
+$specFiles = SpecFile::find('all');
+foreach($specFiles as $specFile) {
+    echo 'window.specFiles[' . $specFile->id . '] = ' . $specFile->to_json() . ';';
+}
+?>
         </script>
 
         <script src="js/inherit.js"></script>
@@ -229,23 +233,26 @@ require 'server/php/libs/loadActiveRecord.php'
         <script src="js/model/Model3d.model.js"></script>
         <script src="js/model/Process.model.js"></script>
         <script src="js/model/Param.model.js"></script>
+        <script src="js/model/Step.model.js"></script>
         <script src="js/view/Params.view.js"></script>
+        <script src="js/view/Model3d.unconfig.view.js"></script>
+        <script src="js/view/Model3d.config.view.js"></script>
         <script src="js/view/Model3d.view.js"></script>
 
         <script>
-            $(document).on('change', '.btn-file :file', function() {
-                var input = $(this);
-                var numFiles = input.get(0).files ? input.get(0).files.length : 1;
-                var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-                input.trigger('fileselect', [numFiles, label]);
-            });
-            $(document).ready(function() {
-                $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
-                    console.log(numFiles);
-                    console.log(label);
-                });
-                window.cnpao.View.Model3d.loadView();
-            });
+$(document).on('change', '.btn-file :file', function() {
+    var input = $(this);
+    var numFiles = input.get(0).files ? input.get(0).files.length : 1;
+    var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+    input.trigger('fileselect', [numFiles, label]);
+});
+$(document).ready(function() {
+    $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
+        console.log(numFiles);
+        console.log(label);
+    });
+    window.cnpao.View.Model3d.loadView();
+});
         </script>
 
         <script>

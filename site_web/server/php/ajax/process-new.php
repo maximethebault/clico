@@ -21,6 +21,18 @@ elseif($model3d->configured)
     die(json_encode(array('error' => 1, 'message' => "Ce modèle 3D n'est plus configurable !")));
 else {
     try {
+        // on va vérifier que la spec existe et qu'il n'existe pas déjà un Process avec le même order !
+        $specProcess = SpecProcess::find(intval($_POST['spec_process_id']));
+    }
+    catch(Exception $e) {
+        die(json_encode(array('error' => 1, 'message' => "Spécifications inconnues")));
+    }
+    try {
+        $processesExisting = Process::find('all', array('include' => 'specProcess', 'conditions' => array('model3d_id = ?', intval($_POST['model3d_id']))));
+        foreach($processesExisting as $processExisting) {
+            if($processExisting->ordering == $specProcess->ordering)
+                die(json_encode(array('error' => 1, 'message' => "Un Process avec le même ordering existe déjà !")));
+        }
         $process->save();
         echo $process->to_json(array('include' => array('specProcess' => array('only' => array('id', 'name', 'ordering'), 'include' => array('specFileInput', 'specFileOutput')))));
     }

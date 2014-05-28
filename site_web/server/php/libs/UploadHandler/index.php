@@ -77,6 +77,7 @@ if($filePath = $upload_handler->getFileResult()) {
         if(!$file) {
             $file = new File();
             $file->model3d_id = intval($_REQUEST['model3d_id']);
+            $file->spec_file_id = intval($_REQUEST['spec_file_id']);
             $file->path = $modelDataPath . $filePath;
             $file->incomplete = $upload_handler->getFileIncomplete();
             $file->size = $upload_handler->getFileSize();

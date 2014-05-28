@@ -90,7 +90,9 @@ window.cnpao.Model.Param = inherit({
             _.forEach(self.tabCachedModels, function(model) {
                 var match = true;
                 _.forEach(conds, function(condValue, condKey) {
-                    if(model._attrs[condKey] !== condValue)
+                    if(!_.isArray(condValue))
+                        condValue = [condValue];
+                    if(condValue.indexOf(model._attrs[condKey]) === -1)
                         match = false;
                 });
                 if(match)
