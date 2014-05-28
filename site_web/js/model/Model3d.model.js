@@ -7,7 +7,7 @@ window.cnpao.Model.Model3d = inherit({
     __constructor: function(attrs) {
         attrs = attrs || {};
         this._attrs = _.defaults(attrs, this.__self.defaultAttrs);
-        this._porcess = {};
+        this._process = {};
     },
     process: function(options, cb) {
         _.extend(options, {model3d_id: this._attrs.id});
@@ -21,7 +21,7 @@ window.cnpao.Model.Model3d = inherit({
             data: this._attrs
         }).done(function(result) {
             var resParsed = JSON.parse(result);
-            if(resParsed.hasOwnProperty('error') && resParsed.error !== 0) {
+            if(!resParsed.id && resParsed.hasOwnProperty('error') && resParsed.error !== 0) {
                 if(cb)
                     cb(resParsed.message);
                 return;
@@ -155,13 +155,13 @@ window.cnpao.Model.Model3d = inherit({
         var self = this;
         if(row.processes) {
             _.forEach(row.processes, function(process) {
-                window.cnpao.Model.Process.insert(process);
+                window.cnpao.Model.Process.insert(process, self);
             });
             row.processes = null;
         }
         if(row.params) {
             _.forEach(row.params, function(param) {
-                window.cnpao.Model.Param.insert(param);
+                window.cnpao.Model.Param.insert(param, self);
             });
             row.params = null;
         }

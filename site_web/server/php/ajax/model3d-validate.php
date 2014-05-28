@@ -61,9 +61,6 @@ if($model3d->membres_id == $_SESSION['id']) {
         elseif($specFile->multiplicity_max && $nbFiles[$specFile->id] > $specFile->multiplicity_max)
             die(json_encode(array('error' => 1, 'message' => "Au plus " . $specFile->multiplicity_max . " fichier(s) \"" . $specFile->name . "\" est(sont) nécessaire(s), mais vous en avez fourni " . $nbFiles[$specFile->id] . " !")));
     }
-    // si on est arrivé jusque là, bonne nouvelle (à priori !)
-    $model3d->configured = true;
-    $model3d->save();
     /*
      *  Initialisation des Process & Step en fonction des spec & formulaire
      */
@@ -79,6 +76,10 @@ if($model3d->membres_id == $_SESSION['id']) {
         $stepNew->process_id = $specProcessIds[$specStep->spec_process_id];
         $stepNew->save();
     }
+    // si on est arrivé jusque là, bonne nouvelle (à priori !)
+    $model3d->command = 1;
+    $model3d->configured = true;
+    $model3d->save();
     echo json_encode(array('error' => 0));
 }
 else {

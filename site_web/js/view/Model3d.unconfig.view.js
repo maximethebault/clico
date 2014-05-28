@@ -132,6 +132,9 @@ window.cnpao.View.Model3dUnconfigured = inherit({
             $('.modal', self.$el).on('hidden.bs.modal', function() {
                 self.$el.slideUp(function() {
                     self.destroy();
+                    window.cnpao.Model.Model3d.get(true, null, function(err, res) {
+                        // TODO: résusciter modèle
+                    });
                 });
             });
         });
@@ -176,6 +179,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                 this.$el.remove();
             }
             else {
+                // TODO: suppression du modèle
                 //TODO: échec lors de la suppression du modèle, gérer l'erreur
             }
         }.bind(this));
@@ -185,6 +189,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
     create: function() {
         var model = new window.cnpao.Model.Model3d();
         model.create(function(err) {
+            console.log(err);
             new window.cnpao.View.Model3dUnconfigured(model);
         });
     }

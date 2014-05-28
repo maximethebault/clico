@@ -13,7 +13,7 @@ window.cnpao.Model.Step = inherit({
         state: window.cnpao.Constants.STATE_PAUSED
     },
     tabCachedModels: {},
-    get: function(refresh, conds, model3d, cb) {
+    get: function(refresh, conds, process, cb) {
         var self = this;
         if(refresh) {
             $.ajax({
@@ -27,7 +27,7 @@ window.cnpao.Model.Step = inherit({
                     return;
                 }
                 var tabModels = _.map(resParsed, function(row) {
-                    return self.insert(row, model3d);
+                    return self.insert(row, process);
                 });
                 cb(null, tabModels);
             });
@@ -53,7 +53,7 @@ window.cnpao.Model.Step = inherit({
         if(self.tabCachedModels.hasOwnProperty(row.id))
             _.extend(self.tabCachedModels[row.id]._attrs, row);
         else
-            self.tabCachedModels[row.id] = new window.cnpao.Model.Process(row, process);
+            self.tabCachedModels[row.id] = new window.cnpao.Model.Step(row, process);
         return self.tabCachedModels[row.id];
     }
 });

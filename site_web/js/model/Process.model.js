@@ -89,7 +89,7 @@ window.cnpao.Model.Process = inherit({
         var self = this;
         if(row.steps) {
             _.forEach(row.steps, function(step) {
-                window.cnpao.Model.Step.insert(step);
+                window.cnpao.Model.Step.insert(step, self);
             });
             row.steps = null;
         }
