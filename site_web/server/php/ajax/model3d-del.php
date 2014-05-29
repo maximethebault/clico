@@ -9,8 +9,8 @@ require_once '../libs/loadActiveRecord.php';
 
 $model3d = Model3d::find(intval($_GET['id']));
 if($model3d->user_id == $_SESSION['id']) {
-    // TODO: supprimer tout ce qui est associé : files, process & leurs propres Step, etc.
-    $model3d->delete();
+    $model3d->delete_request = true;
+    $model3d->save();
     echo json_encode(array('error' => 0));
 }
 else {

@@ -1,6 +1,10 @@
 <div class="model3d-progress-{%=o.id%}" style="position: relative; border: #aaaaaa solid 1px; border-radius: 20px; margin: 20px; padding: 20px;">
     <div>
         <h3>Génération de modèle 3D</h3>
+        <button type="button" class="btn btn-danger model3d-delete-{%=o.id%}">
+            <i class="glyphicon glyphicon-trash"></i>
+            <span>Supprimer ce modèle 3D</span>
+        </button>
         <table class="model3d-selector-table">
             <tr>
                 <td>

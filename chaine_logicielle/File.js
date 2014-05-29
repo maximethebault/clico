@@ -34,7 +34,7 @@ var File = inherit({
     tabCachedModels: {},
     /**
      * Récupère des File depuis la base de données
-     * 
+     *
      * @param {String|Object} cond la condition de sélection
      * @param {Model3d} model3d le Model3d parent
      * @param {Function} cb fonction de callback(err,res)
@@ -81,7 +81,7 @@ var File = inherit({
         _.forEach(this.tabCachedModels, function(cachedModel, index) {
             if(cachedModel._model3d == model3d)
                 delete this.tabCachedModels[index];
-        });
+        }, this);
     }
 });
 

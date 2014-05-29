@@ -9,7 +9,7 @@ require_once '../libs/loadActiveRecord.php';
 
 if(!intval($_SESSION['id']))
     die;
-$arrayCond = array('user_id=?', intval($_SESSION['id']));
+$arrayCond = array('delete_request=0 AND user_id=?', intval($_SESSION['id']));
 if(intval($_GET['id'])) {
     $arrayCond[0] .= ' AND id=?';
     $arrayCond[] = intval($_GET['id']);

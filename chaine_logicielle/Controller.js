@@ -62,3 +62,24 @@ function checkPending() {
     });
 }
 checkPending();
+
+function checkDelete() {
+    Model3d.get({delete_request: 1}, function(err, models3d) {
+        if(err) {
+            setTimeout(checkDelete, Model3d.checkInterval);
+            return;
+        }
+        async.each(
+                models3d,
+                function(model3d, callback) {
+                    model3d.destroy(function() {
+                        callback();
+                    });
+                },
+                function() {
+                    setTimeout(checkDelete, Model3d.checkInterval);
+                }
+        );
+    });
+}
+checkDelete();

@@ -145,12 +145,14 @@ window.cnpao.View.Model3dUnconfigured = inherit({
         $(document).on('process-show', this.processShow.bind(this));
         $(document).on('param-change', this.paramChange.bind(this));
         $('.model3d-config-modal-btn', this.$el).on('click', this.validate.bind(this));
+        $(document).on('click', '.model3d-delete-' + this.model._attrs.id, this.deleteModel.bind(this));
     },
     unbindEvents: function() {
         $(document).off('process-hide', this.processHide.bind(this));
         $(document).off('process-show', this.processShow.bind(this));
         $(document).off('param-change', this.paramChange.bind(this));
         $('.model3d-config-modal-btn', this.$el).off('click', this.validate.bind(this));
+        $(document).off('click', '.model3d-delete-' + this.model._attrs.id, this.deleteModel.bind(this));
     },
     /**
      * Montre/cache les File s'ils sont nécessaires
@@ -171,22 +173,21 @@ window.cnpao.View.Model3dUnconfigured = inherit({
         });
     },
     destroy: function(empty) {
-        this.unbindEvents();
+        var self = this;
+        self.unbindEvents();
         if(empty)
-            this.$el.empty();
-        else
-            this.$el.remove();
+            self.$el.empty();
+        else {
+            self.$el.slideUp(function() {
+                self.$el.remove();
+            });
+        }
     },
     deleteModel: function() {
+        var self = this;
         this.model.del(function(err) {
-            if(err === 0) {
-                this.$el.remove();
-            }
-            else {
-                // TODO: suppression du modèle
-                //TODO: échec lors de la suppression du modèle, gérer l'erreur
-            }
-        }.bind(this));
+            self.destroy();
+        });
     }
 },
 {

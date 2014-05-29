@@ -59,7 +59,7 @@ var Param = inherit({
         _.forEach(this.tabCachedModels, function(cachedModel, index) {
             if(cachedModel._model3d == model3d)
                 delete this.tabCachedModels[index];
-        });
+        }, this);
     }
 });
 

@@ -1,4 +1,8 @@
 <div class="model3d-form-{%=o.id%}" style="position: relative; border: #aaaaaa solid 1px; border-radius: 20px; margin: 20px; padding: 20px;">
+    <button type="button" class="btn btn-danger model3d-delete-{%=o.id%}">
+        <i class="glyphicon glyphicon-trash"></i>
+        <span>Supprimer ce modèle 3D</span>
+    </button>
     <div>
         <h3>1. Sélection des étapes</h3>
         <table class="model3d-selector-table model3d-form-selector">
@@ -11,7 +15,7 @@
                         if($order < $process->ordering && $order !== -1) {
                             echo '</td><td>';
                         }
-                        echo '<span class="process{% if(o.processSelected['.$process->id.']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}">' . $process->name . '</span>';
+                        echo '<span class="process{% if(o.processSelected[' . $process->id . ']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}">' . $process->name . '</span>';
                         $order = $process->ordering;
                     }
                     ?>
@@ -26,7 +30,7 @@
                 <?php
                 foreach($processes as $process) {
                     if(count($process->specParam)) {
-                        echo '<li class="{% if(!o.processSelected['.$process->id.']) { %}hidden{% } %}"><a href=".model3d-form-param-tab-' . $process->id . '-{%=o.id%}" class="model3d-form-param-button-' . $process->id . '-{%=o.id%}" data-toggle="tab">' . $process->name . '</a></li>';
+                        echo '<li class="{% if(!o.processSelected[' . $process->id . ']) { %}hidden{% } %}"><a href=".model3d-form-param-tab-' . $process->id . '-{%=o.id%}" class="model3d-form-param-button-' . $process->id . '-{%=o.id%}" data-toggle="tab">' . $process->name . '</a></li>';
                     }
                 }
                 ?>
@@ -36,13 +40,13 @@
                 foreach($processes as $process) {
                     $params = $process->specParam;
                     if(count($params)) {
-                        echo '<div class="tab-pane{% if(!o.processSelected['.$process->id.']) { %} hidden{% } %} fade model3d-form-param-tab-' . $process->id . '-{%=o.id%}">';
+                        echo '<div class="tab-pane{% if(!o.processSelected[' . $process->id . ']) { %} hidden{% } %} fade model3d-form-param-tab-' . $process->id . '-{%=o.id%}">';
                         foreach($params as $param) {
                             echo '<h4>' . $param->name . '</h4>';
                             echo '<span>Min : ' . $param->value_min . '</span><br />';
                             echo '<span>Max : ' . $param->value_max . '</span><br />';
                             echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
-                            echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" value="{% if(o.paramSelected['.$param->id.']) { %}{%=o.paramValue['.$param->id.']%}{% } else { %}'.$param->value_default.'{% } %}" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br /><br />';
+                            echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" value="{% if(o.paramSelected[' . $param->id . ']) { %}{%=o.paramValue[' . $param->id . ']%}{% } else { %}' . $param->value_default . '{% } %}" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br /><br />';
                         }
                         echo '</div>';
                     }
@@ -123,18 +127,18 @@
     <div class="modal fade model3d-config-modal-{%=o.id%}" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-            
+
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
                     <h4 class="modal-title">Lancement</h4>
                 </div>
-            
+
                 <div class="modal-body">
                     <p>Vous êtes sur le point de lancer la génération d'un modèle.<br />
                         Une fois lancé, il ne sera plus configurable.</p>
                     <p>Voulez-vous continuer ?</p>
                 </div>
-                
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Non</button>
                     <button type="button" class="btn btn-primary primary model3d-config-modal-btn">Oui</button>

@@ -55,23 +55,24 @@ window.cnpao.View.Model3dConfigured = inherit({
     bindEvents: function() {
         $(document).on('ui-update', this.uiUpdate.bind(this));
         $(document).on('ui-progress', this.uiProgress.bind(this));
+        $(document).on('click', '.model3d-delete-' + this.model._attrs.id, this.deleteModel.bind(this));
     },
     unbindEvents: function() {
         $(document).off('ui-update', this.uiUpdate.bind(this));
         $(document).off('ui-progress', this.uiProgress.bind(this));
+        $(document).off('click', '.model3d-delete-' + this.model._attrs.id, this.deleteModel.bind(this));
     },
     destroy: function() {
-        this.unbindEvents();
-        this.$el.remove();
+        var self = this;
+        self.unbindEvents();
+        self.$el.slideUp(function() {
+            self.$el.remove();
+        });
     },
     deleteModel: function() {
+        var self = this;
         this.model.del(function(err) {
-            if(err === 0) {
-                this.$el.remove();
-            }
-            else {
-                //TODO: échec lors de la suppression du modèle, gérer l'erreur
-            }
-        }.bind(this));
+            self.destroy();
+        });
     }
 });

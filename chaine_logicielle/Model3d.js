@@ -7,6 +7,7 @@ var poolModule = require('generic-pool');
 var Utils = require('./Utils');
 var Constants = require('./Constants');
 var WebsocketConnection = require('./broadcast/WebsocketConnection');
+var wrench = require('./file_utils/wrench.js');
 var sqlCon = global.sqlCon;
 
 /**
@@ -14,7 +15,7 @@ var sqlCon = global.sqlCon;
  * -> un 'play', nommé dans le code start, qui (re)démarre un traitement
  * -> un 'pause', qui interrompt temporairement un traitement qui pourra être repris au même endroit ultérieurement (même s'il est parfois nécessaire de recommencer la Step qui avait été interrompue depuis le début)
  * -> un 'stop', qui stoppe un traitement : si on veut le relancer, il faut recommencer depuis le début
- * 
+ *
  * Un Model3d peut se terminer de deux manières différentes :
  * -> l'utilisateur décide de stopper la génération du Model3d : la méthode stop est appelée et se propage aux Process et Step
  * -> le programme prend lui-même l'initiative de l'arrêt, décomposition en deux cas de figure :
@@ -31,11 +32,15 @@ var Model3d = inherit({
         // les broadcasts voulant être notifiés lors de la mise à jour du modèle courant
         this.userBroadcast = [];
         this.commandWatcher = setTimeout(this._commandWatch.bind(this), this.__self.watchInterval);
+        // indique si le modèle 3d a été détruit
+        this.destroyed = false;
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') créé');
     },
     _commandWatch: function() {
         var self = this;
-        sqlCon.query('SELECT command FROM model3d WHERE id=? AND command<>state', [self._attrs.id], function(err, rows) {
+        if(self.destroyed)
+            return;
+        sqlCon.query('SELECT command, delete_request FROM model3d WHERE id=? AND command<>state', [self._attrs.id], function(err, rows) {
             // on factorise dans la fonction suivante le code à exécuter après le lancement de l'ordre
             function resetTimer() {
                 self.commandWatcher = setTimeout(self._commandWatch.bind(self), self.__self.watchInterval);
@@ -45,31 +50,46 @@ var Model3d = inherit({
                 console.error(message);
             }
             if(rows.length) {
-                var newCommand = rows[0].command;
-                if(newCommand == Constants.COMMAND_PAUSE) {
-                    self.pause(false, function(err) {
-                        if(err)
-                            console.error('[Model3d] Impossible de mettre le processus en pause : ' + err + '.');
-                        resetTimer();
-                    });
-                }
-                else if(newCommand == Constants.COMMAND_RUN) {
-                    self.start(function(err) {
-                        if(err)
-                            console.error('[Model3d] Impossible de démarrer le processus : ' + err + '.');
-                        resetTimer();
-                    });
-                }
-                else if(newCommand == Constants.COMMAND_STOP) {
-                    self.stop(function(err) {
-                        if(err)
-                            console.error('[Model3d] Impossible d\'arrêter le processus : ' + err + '.');
-                        resetTimer();
-                    });
+                var delete_request = rows[0].delete_request;
+                if(delete_request) {
+                    if(self._attrs.state == Constants.STATE_STOPPED) {
+                        self.destroy();
+                    }
+                    else {
+                        self.stop(function(err) {
+                            if(err)
+                                console.error('[Model3d] Impossible d\'arrêter le processus : ' + err + '.');
+                            resetTimer();
+                        });
+                    }
                 }
                 else {
-                    console.error('[Model3d] La commande n\'a pas été comprise.');
-                    resetTimer();
+                    var newCommand = rows[0].command;
+                    if(newCommand == Constants.COMMAND_PAUSE) {
+                        self.pause(false, function(err) {
+                            if(err)
+                                console.error('[Model3d] Impossible de mettre le processus en pause : ' + err + '.');
+                            resetTimer();
+                        });
+                    }
+                    else if(newCommand == Constants.COMMAND_RUN) {
+                        self.start(function(err) {
+                            if(err)
+                                console.error('[Model3d] Impossible de démarrer le processus : ' + err + '.');
+                            resetTimer();
+                        });
+                    }
+                    else if(newCommand == Constants.COMMAND_STOP) {
+                        self.stop(function(err) {
+                            if(err)
+                                console.error('[Model3d] Impossible d\'arrêter le processus : ' + err + '.');
+                            resetTimer();
+                        });
+                    }
+                    else {
+                        console.error('[Model3d] La commande n\'a pas été comprise.');
+                        resetTimer();
+                    }
                 }
             }
             else
@@ -118,14 +138,21 @@ var Model3d = inherit({
     },
     /*
      * Démarre la chaine de traitement
-     * 
+     *
      * @param {Function} cb appelé quand le démarrage de la chaine de traitement est effectif
      */
     start: function(cb) {
         var self = this;
         // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
-        if(self.commandInProgress)
+        if(self.commandInProgress) {
+            cb();
             return;
+        }
+        if(self._attrs.delete_request) {
+            cb();
+            self.destroy();
+            return;
+        }
         self.commandInProgress = true;
         if(self._attrs.state == Constants.STATE_STOPPED) {
             self.update({
@@ -150,7 +177,7 @@ var Model3d = inherit({
     },
     /**
      * Trouve le prochain Process à démarrer et le démarre
-     * 
+     *
      * @param {Function} cb appelé quand le démarrage du Process est effectif (lorsqu'une Step a été lancée)
      */
     startNextProcess: function(cb) {
@@ -183,15 +210,17 @@ var Model3d = inherit({
     },
     /**
      * Met en pause la chaine de traitement
-     * 
+     *
      * @param {boolean} hurry si le traitement actuel doit être interrompu dès que possible au risque de devoir par la suite recommencer la Step interrompue
      * @param {Function} cb appelé quand la mise en pause est effective, c'est-à-dire quand plus aucune Step lié à ce Model3d n'est en cours d'exécution
      */
     pause: function(hurry, cb) {
         var self = this;
         // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
-        if(self.commandInProgress)
+        if(self.commandInProgress) {
+            cb();
             return;
+        }
         self.commandInProgress = true;
         if(self._attrs.state == Constants.STATE_STOPPED) {
             self.update({
@@ -227,17 +256,18 @@ var Model3d = inherit({
     },
     /*
      *
-     *  
+     *
      * @param {Function} cb appelé quand la chaine de traitement est vraiment terminée
      */
     stop: function(cb) {
         var self = this;
         // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
-        if(self.commandInProgress)
+        if(self.commandInProgress) {
+            cb();
             return;
+        }
         self.commandInProgress = true;
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') arrêté');
-        // TODO: effacer tous les caches des Process, Step, File, Param
         if(self.processCurrent) {
             self.processCurrent.stop(function() {
                 self.__self.poolModel3d.release(self.poolIdentifier);
@@ -264,7 +294,7 @@ var Model3d = inherit({
     },
     /*
      * Signale une erreur avant de suspendre ou stopper le traitement
-     * 
+     *
      * @param {Error} err l'erreur rencontrée. Si elle est fatale (err.fatal === true), on pause le traitement, sinon, on se contente d'enregistrer le warning
      */
     error: function(err) {
@@ -288,7 +318,44 @@ var Model3d = inherit({
         }, function(err) {
             self.commandInProgress = false;
             self.processCurrent = null;
+            self.removeCache();
             cb(err);
+        });
+    },
+    destroy: function(cb) {
+        var self = this;
+        // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
+        if(self.commandInProgress) {
+            cb();
+            return;
+        }
+        self.commandInProgress = true;
+        console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') supprimé');
+        // on commence par supprimer tout le répertoire 'data'
+        wrench.rmdirRecursive(self.basePath, true, function(err) {
+            if(err)
+                console.error('[Model3d] Impossible de supprimer les fichiers associés au modèle ' + self._attrs.id + ' : ' + err + '.');
+            sqlCon.query('DELETE p, s FROM process p LEFT JOIN step s ON p.id=s.process_id WHERE p.model3d_id=?', [self._attrs.id], function(err) {
+                if(err)
+                    console.error('[Model3d] Impossible de supprimer les Process & Step associés au modèle ' + self._attrs.id + ' : ' + err + '.');
+            });
+            sqlCon.query('DELETE FROM file WHERE model3d_id=?', [self._attrs.id], function(err) {
+                if(err)
+                    console.error('[Model3d] Impossible de supprimer les File associés au modèle ' + self._attrs.id + ' : ' + err + '.');
+            });
+            sqlCon.query('DELETE FROM param WHERE model3d_id=?', [self._attrs.id], function(err) {
+                if(err)
+                    console.error('[Model3d] Impossible de supprimer les Param associés au modèle ' + self._attrs.id + ' : ' + err + '.');
+            });
+            sqlCon.query('DELETE FROM model3d WHERE id=?', [self._attrs.id], function(err) {
+                if(err)
+                    console.error('[Model3d] Impossible de supprimer le  modèle ' + self._attrs.id + ' : ' + err + '.');
+            });
+            if(self.commandWatcher)
+                clearTimeout(self.commandWatcher);
+            self.destroyed = true;
+            self.removeCache();
+            cb();
         });
     },
     sendNotification: function(message) {
@@ -305,7 +372,7 @@ var Model3d = inherit({
     // l'intervalle en millisecondes entre chaque vérification pour de nouvelles générations à démarrer
     checkInterval: 5000,
     // l'intervalle en millisecondes entre chaque vérification de nouvel ordre pour un Model3d
-    watchInterval: 100,
+    watchInterval: 1000,
     poolUniqueIdentifier: 1,
     poolModel3d: poolModule.Pool({
         name: 'model3d',
