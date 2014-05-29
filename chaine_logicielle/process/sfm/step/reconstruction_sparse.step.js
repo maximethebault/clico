@@ -20,7 +20,7 @@ var StepReconstructionSparse = inherit(Step, {
         var self = this;
         // une étape qui était en état d'erreur peut être relancée plusieurs fois, c'est pour cela qu'on doit remettre la progression à 0 à chaque nouveau run
         this.internalProgress = 0;
-        
+
         this.totalEvents = self._process.nbImages;
         self.__base(function(err) {
             cb(err);
@@ -68,7 +68,6 @@ var StepReconstructionSparse = inherit(Step, {
                 self.updateProgress((self.internalProgress / self.totalEvents) * 100);
             }
             else {
-                // TODO: make it work with any image name
                 matches = /^(?:#|\+)[0-9]+: \[(.*)\]/.exec(line);
                 if(matches) {
                     // on évite les doublons dans le modèle

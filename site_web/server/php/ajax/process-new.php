@@ -9,8 +9,6 @@ if(!array_key_exists('model3d_id', $_POST))
 require_once '../../../config.php';
 require_once '../libs/loadActiveRecord.php';
 
-error_reporting(E_ALL ^ E_NOTICE);
-
 $process = new Process();
 $process->model3d_id = intval($_POST['model3d_id']);
 $process->state = intval($_POST['state']);

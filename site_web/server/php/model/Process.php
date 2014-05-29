@@ -1,9 +1,9 @@
 <?php
 
-//TODO: restreindre l'accès aux propriéts comme state (empêcher écriture, autoriser lecture)
-class Process extends ActiveRecord\Model {
-    
+class Process extends ActiveRecord\Model
+{
     public static $table_name = 'process';
+    static $attr_protected = array('state');
     static $belongs_to = array(
         array('model3d'),
         array('specProcess')
@@ -11,4 +11,5 @@ class Process extends ActiveRecord\Model {
     static $has_many = array(
         array('steps', 'class_name' => 'Step', 'foreign_key' => 'process_id')
     );
+
 }

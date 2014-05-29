@@ -192,7 +192,6 @@ var Model3d = inherit({
             });
             self.processCurrent = undefined;
             for(var i = 0; i < processes.length; i++) {
-                // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
                 if(processes[i]._attrs.state == Constants.STATE_STOPPED)
                     continue;
                 self.processCurrent = processes[i];

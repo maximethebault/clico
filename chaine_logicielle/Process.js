@@ -45,7 +45,7 @@ var Process = inherit({
     },
     /*
      * Démarre la chaine de Step associée au Process courant
-     * 
+     *
      * @param {Function} cb appelé quand le démarrage de la chaine de Step est effectif
      */
     start: function(cb) {
@@ -64,7 +64,7 @@ var Process = inherit({
     },
     /**
      * Trouve la prochaine Step à démarrer et la démarre
-     * 
+     *
      * @param {Function} cb appelé quand le démarrage de la Step est effectif
      */
     startNextStep: function(cb) {
@@ -82,7 +82,6 @@ var Process = inherit({
             });
             self._stepCurrent = undefined;
             for(var i = 0; i < steps.length; i++) {
-                // TODO: revoir cette partie, dans le cas où on a besoin de recommencer une étape
                 if(steps[i]._attrs.state == Constants.STATE_STOPPED)
                     continue;
                 self._stepCurrent = steps[i];
@@ -100,7 +99,7 @@ var Process = inherit({
     },
     /**
      * Met en pause le Process courant
-     * 
+     *
      * @param {boolean} hurry si le traitement actuel doit être interrompu dès que possible au risque de devoir par la suite recommencer la Step interrompue
      * @param {Function} cb appelé quand la mise en pause est effective, c'est-à-dire quand plus aucune Step lié à ce Model3d n'est en cours d'exécution
      */
@@ -129,7 +128,7 @@ var Process = inherit({
     },
     /*
      *
-     *  
+     *
      * @param {Function} cb appelé quand la chaine de traitement est vraiment terminée
      */
     stop: function(cb) {
