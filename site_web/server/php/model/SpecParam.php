@@ -1,6 +1,5 @@
 <?php
 
-//TODO: mettre tout en read-only
 class SpecParam extends ActiveRecord\Model
 {
     public static $table_name = 'spec_param';
@@ -8,4 +7,7 @@ class SpecParam extends ActiveRecord\Model
         array('spec_process')
     );
 
+    public function is_readonly() {
+        return true;
+    }
 }

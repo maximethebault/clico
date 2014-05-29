@@ -1,4 +1,5 @@
 <?php
+
 /*
  * jQuery File Upload Plugin PHP Example 5.14
  * https://github.com/blueimp/jQuery-File-Upload
@@ -37,7 +38,7 @@ if(!array_key_exists('spec_file_id', $_REQUEST))
 
 try {
     $model3d = Model3d::find(intval($_REQUEST['model3d_id']));
-    if($model3d->membres_id != $_SESSION['id'])
+    if($model3d->user_id != $_SESSION['id'])
         die('{"files":[{"error":"La session a expiré. Veuillez vous reconnecter"}]}');
     elseif($model3d->configured)
         die('{"files":[{"error":"Ce modèle 3D n\'est plus configurable !"}]}');
@@ -59,7 +60,7 @@ $options = array(
 if($specFile->multiplicity_max)
     $options['max_number_of_files'] = $specFile->multiplicity_max;
 
-$options['accept_file_types'] = '`(\.|\/)(' . implode('|', explode(',', $specFile->extension)) . ')$`';
+$options['accept_file_types'] = '`(\.|\/)(' . implode('|', explode(',', $specFile->extension)) . ')$`i';
 
 if(array_key_exists('file', $_GET)) {
     $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['model3d_id']), $modelDataPath . $_GET['file'])));

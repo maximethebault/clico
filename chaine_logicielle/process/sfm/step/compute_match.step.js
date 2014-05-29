@@ -20,12 +20,14 @@ var StepComputeMatch = inherit(Step, {
          * - Première sous-étape : autant de détection + extraction que d'images
          * - Deuxième sous-étape : n*(n+1)/2 (suite arithmétique)
          */
-        this.totalEvents = process.nbImages + ((process.nbImages * (process.nbImages - 1)) / 2);
+        this.totalEvents = 0;
     },
     start: function(cb) {
         var self = this;
         // une étape qui était en état d'erreur peut être relancée plusieurs fois, c'est pour cela qu'on doit remettre la progression à 0 à chaque nouveau run
         this.internalProgress = 0;
+        // on calcule le nombre total d'évènements seulement à ce moment, sinon _process.nbImages n'est pas encore disponible
+        this.totalEvents = self._process.nbImages + ((self._process.nbImages * (self._process.nbImages - 1)) / 2);
         self.__base(function(err) {
             cb(err);
             self._process.processDeferred.promise.then(function() {

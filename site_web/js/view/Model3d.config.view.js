@@ -1,9 +1,17 @@
 window.cnpao = window.cnpao || {Model: {}, View: {}};
 
 window.cnpao.View.Model3dConfigured = inherit({
-    __constructor: function(model) {
+    __constructor: function(model, $el) {
         this.model = model;
+        this.$el = $el;
         this.updateView();
+        /**
+         * Mettre à jour la vue pouvant être une opération coûteuse, on limite à une update toutes les secondes
+         */
+        this.throttledUpdateView = _.throttle(this.updateView.bind(this), 1000, {
+            leading: false
+        });
+        this.bindEvents();
     },
     updateView: function() {
         var self = this;
@@ -32,16 +40,25 @@ window.cnpao.View.Model3dConfigured = inherit({
             });
         });
     },
-    modelUpdate: function(e, id) {
+    uiUpdate: function(e, model3d_id) {
         var self = this;
-        if(id == self.model._attrs.id)
-            self.updateView();
+        if(model3d_id == self.model._attrs.id)
+            self.throttledUpdateView();
+    },
+    uiProgress: function(e, model3d_id, process_id, step_id, progress) {
+        var self = this;
+        if(model3d_id == self.model._attrs.id) {
+            $('.progress-bar-' + step_id, self.$el).prop('aria-valuenow', progress);
+            $('.progress-bar-' + step_id, self.$el).css('width', progress + '%');
+        }
     },
     bindEvents: function() {
-        $(document).on('model-update', this.modelUpdate.bind(this));
+        $(document).on('ui-update', this.uiUpdate.bind(this));
+        $(document).on('ui-progress', this.uiProgress.bind(this));
     },
     unbindEvents: function() {
-        $(document).off('model-update', this.modelUpdate.bind(this));
+        $(document).off('ui-update', this.uiUpdate.bind(this));
+        $(document).off('ui-progress', this.uiProgress.bind(this));
     },
     destroy: function() {
         this.unbindEvents();

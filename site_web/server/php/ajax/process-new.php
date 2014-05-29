@@ -1,4 +1,5 @@
 <?php
+
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 session_start();
 if(!array_key_exists('id', $_SESSION))
@@ -15,7 +16,7 @@ $process->model3d_id = intval($_POST['model3d_id']);
 $process->state = intval($_POST['state']);
 $process->spec_process_id = intval($_POST['spec_process_id']);
 $model3d = Model3d::find(intval($_POST['model3d_id']));
-if($model3d->membres_id != $_SESSION['id'])
+if($model3d->user_id != $_SESSION['id'])
     die(json_encode(array('error' => 1, 'message' => "Vous n'avez pas les autorisations nécessaires !")));
 elseif($model3d->configured)
     die(json_encode(array('error' => 1, 'message' => "Ce modèle 3D n'est plus configurable !")));

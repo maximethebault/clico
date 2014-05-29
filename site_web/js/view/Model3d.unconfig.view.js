@@ -131,9 +131,10 @@ window.cnpao.View.Model3dUnconfigured = inherit({
             }
             $('.modal', self.$el).on('hidden.bs.modal', function() {
                 self.$el.slideUp(function() {
-                    self.destroy();
-                    window.cnpao.Model.Model3d.get(true, null, function(err, res) {
-                        // TODO: résusciter modèle
+                    self.destroy(true);
+                    window.cnpao.Model.Model3d.get(true, null, function(err) {
+                        new window.cnpao.View.Model3dConfigured(self.model, self.$el);
+                        self.$el.slideDown();
                     });
                 });
             });
@@ -169,9 +170,12 @@ window.cnpao.View.Model3dUnconfigured = inherit({
             });
         });
     },
-    destroy: function() {
+    destroy: function(empty) {
         this.unbindEvents();
-        this.$el.remove();
+        if(empty)
+            this.$el.empty();
+        else
+            this.$el.remove();
     },
     deleteModel: function() {
         this.model.del(function(err) {

@@ -1,6 +1,5 @@
 <?php
 
-//TODO: mettre tout en read-only
 class SpecProcess extends ActiveRecord\Model
 {
     public static $table_name = 'spec_process';
@@ -14,4 +13,7 @@ class SpecProcess extends ActiveRecord\Model
         array('process', 'class_name' => 'Process', 'foreign_key' => 'spec_process_id')
     );
 
+    public function is_readonly() {
+        return true;
+    }
 }

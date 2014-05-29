@@ -14,12 +14,14 @@ var StepReconstructionSparse = inherit(Step, {
          * Contient la liste des images composant le modèle
          */
         this.model = [];
-        this.totalEvents = process.nbImages;
+        this.totalEvents = 0;
     },
     start: function(cb) {
         var self = this;
         // une étape qui était en état d'erreur peut être relancée plusieurs fois, c'est pour cela qu'on doit remettre la progression à 0 à chaque nouveau run
         this.internalProgress = 0;
+        
+        this.totalEvents = self._process.nbImages;
         self.__base(function(err) {
             cb(err);
             self._process.processDeferred.promise.then(function() {

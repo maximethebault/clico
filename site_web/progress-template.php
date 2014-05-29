@@ -28,7 +28,7 @@
                     echo '<span class="step-name">' . $i . '. ' . $step->name . '</span>';
                     ?>
                     <div class="progress progress-striped{% if(o.step[<?php echo $step->id; ?>].state === 1) { %} active{% } %}">
-                        <div class="progress-bar" role="progressbar" aria-valuenow="{%=o.step[<?php echo $step->id; ?>].progress%}" aria-valuemin="0" aria-valuemax="100" style="width: {%=o.step[<?php echo $step->id; ?>].progress%}%">
+                        <div class="progress-bar progress-bar-{%=o.step[<?php echo $step->id; ?>].id%}" role="progressbar" aria-valuenow="{%=o.step[<?php echo $step->id; ?>].progress%}" aria-valuemin="0" aria-valuemax="100" style="width: {%=o.step[<?php echo $step->id; ?>].progress%}%">
                         </div>
                     </div>
                     <?php

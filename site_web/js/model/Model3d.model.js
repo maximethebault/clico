@@ -110,7 +110,7 @@ window.cnpao.Model.Model3d = inherit({
 {
     defaultAttrs: {
         id: 0,
-        membres_id: window.user_id,
+        user_id: window.user_id,
         command: window.cnpao.Constants.COMMAND_PAUSE,
         state: window.cnpao.Constants.STATE_PAUSED,
         error: ''

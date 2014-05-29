@@ -27,14 +27,34 @@ var Step = inherit({
             if(err) {
                 var message = '[Step] Erreur lors de la mise à jour de l\'enregistrement ' + self._attrs.id + ' en BDD : ' + err + '.';
                 console.error(message);
-                cb(new Error(message), null);
+                cb(new Error(message));
                 return;
             }
             cb(null);
+            if(fields && fields.state)
+                self.sendNotification({
+                    uiUpdate: true
+                });
         });
     },
+    /**
+     * Met à jour la progression d'une étape
+     * 
+     * @param {int} newProgress la nouvelle progression (pourcentage compris entre 0 et 100)
+     */
     updateProgress: function(newProgress) {
-        // TODO: implémenter suivi progression
+        var self = this;
+        if(newProgress > 100)
+            newProgress = 100;
+        if(newProgress < 0)
+            newProgress = 0;
+        self.update({progress: newProgress}, function(err) {
+            if(err)
+                console.error('[Step] Mise à jour de la progression non effectuée pour la Step ' + self._attrs.id + ' : ' + err + '.');
+            self.sendNotification({
+                progress: newProgress
+            });
+        });
     },
     /*
      * Démarre la Step courante
@@ -140,6 +160,10 @@ var Step = inherit({
                     console.error('[Step] La step n\'a pas réussi à se terminer : ' + err + '.');
             });
         });
+    },
+    sendNotification: function(message) {
+        message.step_id = this._attrs.id;
+        this._process.sendNotification(message);
     }
 }, {
     tabCachedModels: {},

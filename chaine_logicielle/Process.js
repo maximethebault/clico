@@ -178,8 +178,12 @@ var Process = inherit({
             self._model3d.startNextProcess(cb);
         });
     },
+    sendNotification: function(message) {
+        message.process_id = this._attrs.id;
+        this._model3d.sendNotification(message);
+    },
     removeCache: function() {
-        Step.removeCache(this._attrs.id);
+        Step.removeCache(this);
     }
 }, {
     tabCachedModels: {},

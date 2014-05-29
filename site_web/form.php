@@ -183,6 +183,7 @@ require 'server/php/libs/loadActiveRecord.php'
         </script>
 
         <script src="js/underscore.js"></script>
+        <script src="js/jquery.cookie.js"></script>
         <script src="FileUpload/js/vendor/jquery.ui.widget.js"></script>
         <!-- The Templates plugin is included to render the upload/download listings -->
         <script src="FileUpload/js/tmpl.min.js"></script>
@@ -210,9 +211,9 @@ require 'server/php/libs/loadActiveRecord.php'
         <script src="FileUpload/js/jquery.fileupload-ui.js"></script>
 
         <script>
-window.user_id = <?php echo intval($_SESSION['id']); ?>;
-window.specProcesses = {};
-window.specFiles = {};
+            window.user_id = <?php echo intval($_SESSION['id']); ?>;
+            window.specProcesses = {};
+            window.specFiles = {};
 <?php
 $specProcesses = SpecProcess::find('all');
 foreach($specProcesses as $specProcess) {
@@ -227,9 +228,8 @@ foreach($specFiles as $specFile) {
 
         <script src="js/inherit.js"></script>
         <script src="js/Constants.js"></script>
-        <script src="js/node.js"></script>
-        <script src="js/Socket.js"></script>
-        <script src="js/ProgressManager.js"></script>
+        <script src="js/sync/SyncSocket.js"></script>
+        <script src="js/sync/SyncSql.js"></script>
         <script src="js/model/Model3d.model.js"></script>
         <script src="js/model/Process.model.js"></script>
         <script src="js/model/Param.model.js"></script>
@@ -240,23 +240,13 @@ foreach($specFiles as $specFile) {
         <script src="js/view/Model3d.view.js"></script>
 
         <script>
-$(document).on('change', '.btn-file :file', function() {
-    var input = $(this);
-    var numFiles = input.get(0).files ? input.get(0).files.length : 1;
-    var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-    input.trigger('fileselect', [numFiles, label]);
-});
-$(document).ready(function() {
-    $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
-        console.log(numFiles);
-        console.log(label);
-    });
-    window.cnpao.View.Model3d.loadView();
-});
-        </script>
-
-        <script>
             $(document).ready(function() {
+                $(document).on('change', '.btn-file :file', function() {
+                    var input = $(this);
+                    var numFiles = input.get(0).files ? input.get(0).files.length : 1;
+                    var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+                    input.trigger('fileselect', [numFiles, label]);
+                });
                 $(document).on('click', '.model3d-form-selector span.process', function() {
                     var hasClass = false;
                     if($(this).hasClass("process-selected"))
@@ -309,6 +299,14 @@ $(document).ready(function() {
                         $('.model3d-form-params-message-' + model3dId).addClass('hidden');
                     }
                 });
+
+                window.cnpao.View.Model3d.loadView();
+
+                // fallback sur la synchro SQL si le Websocket ne fonctionne pas
+                var syncSocket = new window.cnpao.SyncSocket();
+                syncSocket.onClose = function() {
+                    new window.cnpao.SyncSql();
+                };
             });
         </script>
     </body>

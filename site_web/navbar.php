@@ -36,13 +36,13 @@ function affiche_menu_droite() {
     $menuDroite = "";
     if(isset($_SESSION['id'])) {
         include("connexion-bdd.php");
-        $query = $bdd->prepare('SELECT nom, prenom FROM membres WHERE membres_id= :membres_id');
-        $query->bindValue(':membres_id', $_SESSION['id'], PDO::PARAM_INT);
+        $query = $bdd->prepare('SELECT surname, name FROM user WHERE id= :user_id');
+        $query->bindValue(':user_id', $_SESSION['id'], PDO::PARAM_INT);
         $query->execute();
         $data = $query->fetch();
 
         $menuDroite .= "<li class=\"dropdown\">
-								<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">" . $data['prenom'] . " " . $data['nom'] . "</a>";
+								<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">" . $data['name'] . " " . $data['surname'] . "</a>";
         $menuDroite .= "<ul class=\"dropdown-menu\">
 		                        <li><a href=\"deconnexion.php\">Déconnexion</a></li>
 							</ul></li>";

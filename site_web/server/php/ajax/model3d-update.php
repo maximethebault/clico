@@ -8,7 +8,7 @@ require_once '../../../config.php';
 require_once '../libs/loadActiveRecord.php';
 
 $model3d = Model3d::find(intval($_REQUEST['id']));
-if($model3d->membres_id == $_SESSION['id']) {
+if($model3d->user_id == $_SESSION['id']) {
     if(array_key_exists('name', $_POST))
         $model3d->name = $_POST['name'];
     if(array_key_exists('command', $_POST))
