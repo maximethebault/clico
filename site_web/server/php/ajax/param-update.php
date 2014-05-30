@@ -13,10 +13,8 @@ if($param->model3d->user_id != $_SESSION['id'])
 elseif($param->model3d->configured)
     die(json_encode(array('error' => 1, 'message' => "Ce modèle 3D n'est plus configurable !")));
 else {
-    if(array_key_exists('name', $_POST))
-        $param->name = $_POST['name'];
     if(array_key_exists('value', $_POST))
-        $param->value = $_POST['value'];
+        $param->value = floatval($_POST['value']);
     $param->save();
     echo $param->to_json();
 }

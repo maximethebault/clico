@@ -18,7 +18,7 @@ function create_file(file, cb) {
     });
 }
 
-var StepSpatialSubsampling = inherit(Step, {
+var StepSampling = inherit(Step, {
     __constructor: function(attrs, process) {
         this.__base(attrs, process);
         // contiendra le timeout de surveillance du fichier de sortie : si pas de changement pendant un laps de temps (@see constante watcherTimeout), on supposera que cloudcompare a fini son travail
@@ -32,38 +32,38 @@ var StepSpatialSubsampling = inherit(Step, {
         var self = this;
         self.__base(function(err) {
             cb(err);
-            self._process._model3d.file({code: 'pointCloud'}, function(err, files) {
+            self._process._model3d.file({code: 'mesh'}, function(err, files) {
                 if(err) {
                     self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
                     // on ne va pas plus loin
                     return;
                 }
-                if(!files || !files.pointCloud) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : aucun nuage de points disponible en entrée');
+                if(!files || !files.mesh) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : aucun mesh disponible en entrée');
                     // on ne va pas plus loin
                     return;
                 }
-                var inputFile = files.pointCloud._attrs.path;
+                var inputFile = files.mesh._attrs.path;
 
                 /*
-                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _SPATIAL_SUBSAMPLED + la nouvelle extension
+                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _RESAMPLED + la nouvelle extension
                  */
                 var splitInput = inputFile.split('.');
-                self.outputFile = splitInput[0] + '_SPATIAL_SUBSAMPLED.asc';
+                self.outputFile = splitInput[0] + '_RESAMPLED.asc';
 
-                self._process._model3d.param({code: 'subsamplingDensity'}, function(err, param) {
+                self._process._model3d.param({code: 'samplingPointNumber'}, function(err, param) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du paramètre de densité :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du paramètre "nombre de points" :' + err + '.');
                         // on ne va pas plus loin
                         return;
                     }
-                    if(!param || !param.subsamplingDensity) {
+                    if(!param || !param.samplingPointNumber) {
                         self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer le paramètre de densité.');
                         // on ne va pas plus loin
                         return;
                     }
 
-                    var subsamplingDensity = param.subsamplingDensity._attrs.id ? param.subsamplingDensity._attrs.value : param.subsamplingDensity._attrs.value_default;
+                    var samplingPointNumber = param.samplingPointNumber._attrs.id ? param.samplingPointNumber._attrs.value : param.samplingPointNumber._attrs.value_default;
 
                     // on force la création du fichier pour que fs.watch ne provoque pas d'erreur si le fichier n'existe pas
                     create_file(self.outputFile, function(err) {
@@ -72,7 +72,7 @@ var StepSpatialSubsampling = inherit(Step, {
                             // on ne va pas plus loin
                             return;
                         }
-                        self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-PREC', '12', '-SEP', 'SPACE', '-O', inputFile, '-SS', 'SPATIAL', subsamplingDensity]);
+                        self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-PREC', '12', '-SEP', 'SPACE', '-O', inputFile, '-SAMPLE_MESH', 'POINT', samplingPointNumber]);
                         self.process.on('error', self.error.bind(self));
                         self.watcher = fs.watch(self.outputFile, function(event) {
                             if(event == 'change') {
@@ -119,24 +119,24 @@ var StepSpatialSubsampling = inherit(Step, {
                     // on ne va pas plus loin
                     return;
                 }
-                self._process._model3d.file({code: 'pointCloud'}, function(err, file) {
+                self._process._model3d.file({code: 'mesh'}, function(err, file) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh :' + err + '.');
                         remBase(cb);
                         // on ne va pas plus loin
                         return;
                     }
                     if(!file || !file.pointCloud) {
-                        self._process._model3d.createFile({code: 'pointCloud', path: self.outputFile, size: stats.size}, function(err) {
+                        self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh :' + err + '.');
                             remBase(cb);
                         });
                     }
                     else {
-                        file.pointCloud.update({path: self.outputFile, size: stats.size}, function(err) {
+                        file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh :' + err + '.');
                             remBase(cb);
                         });
                     }
@@ -159,4 +159,4 @@ var StepSpatialSubsampling = inherit(Step, {
     watcherTimeout: 1000
 });
 
-module.exports = StepSpatialSubsampling;
+module.exports = StepSampling;

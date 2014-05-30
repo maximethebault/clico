@@ -4,49 +4,77 @@ var Step = require('../../../Step');
 var inherit = require('inherit');
 var _ = require('underscore');
 
-var StepDeleteEdges = inherit(Step, {
+var StepPoisson = inherit(Step, {
     __constructor: function(attrs, process) {
         this.__base(attrs, process);
         // l'objet qui contiendra l'appel à cloudcompare
         this.process = null;
     },
-    start: function() {
+    processPoissonRecon: function(data) {
+        var matches = data.match(/ERROR/g);
+        if(matches) {
+            this.error(matches[0]);
+        }
+    },
+    start: function(cb) {
         var self = this;
+        self.__base(function(err) {
+            cb(err);
+            self._process._model3d.file({code: ['pointCloud', 'mesh']}, function(err, files) {
+                if(err) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
+                    // on ne va pas plus loin
+                    return;
+                }
+                if(!files || !files.pointCloud) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : aucun nuage de points disponible en entrée');
+                    // on ne va pas plus loin
+                    return;
+                }
+                var inputFile = files.pointCloud._attrs.path;
 
-        // TODO: passage des noms de fichiers entre Process
-        var input = 'input.ply';
-		
-		// TODO: choix de la profondeur et du poids par l'utilisateur
-		var depth = 9;
-		var weight = 0;
+                /*
+                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _MESH + la nouvelle extension
+                 */
+                var splitInput = inputFile.split('.');
+                if(files.mesh)
+                    self.outputFile = files.mesh._attrs.path;
+                else
+                    self.outputFile = splitInput[0] + '_MESH.ply';
 
-        // nom du fichier en sortie, composé du nom du fichier en entrée + _RECON.ply
-        var splitInput = input.split('.');
-        splitInput.pop();
-        var outputFile = splitInput.join('.') + '_RECON.ply';
+                self._process._model3d.param({code: ['poissonDepth', 'poissonWeight']}, function(err, param) {
+                    if(err) {
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des paramètres :' + err + '.');
+                        // on ne va pas plus loin
+                        return;
+                    }
+                    console.log(param);
+                    if(!param || !param.poissonDepth || !param.poissonWeight) {
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer les paramètres.');
+                        // on ne va pas plus loin
+                        return;
+                    }
 
-	var border = 5;
-	// TODO: permettre le choix de la border par l'utilisateur.
+                    var poissonDepth = param.poissonDepth._attrs.id ? param.poissonDepth._attrs.value : param.poissonDepth._attrs.value_default;
+                    var poissonWeight = param.poissonWeight._attrs.id ? param.poissonWeight._attrs.value : param.poissonWeight._attrs.value_default;
 
-        self.process = spawn('PoissonRecon.x64', ['--in', input, '--out', output, '--depth', depth, '--pointWeight', weight, '--verbose']);
-
-        self.process.on('error', self.error.bind(self));
-        self.process.on('exit', function() {
-            self.process = null;
-            self.done();
+                    self.process = spawn('PoissonRecon.x64', ['--in', inputFile, '--out', self.outputFile, '--depth', poissonDepth, '--pointWeight', poissonWeight, '--verbose']);
+                    self.process.on('error', self.error.bind(self));
+                    self.process.on('data', self.processPoissonRecon.bind(self));
+                    self.process.on('close', function() {
+                        self.process = null;
+                        self.done(function() {
+                            self.clean();
+                        });
+                    });
+                });
+            });
         });
     },
     pause: function(hurry, cb) {
-        var self = this;
-        self.__base(hurry, cb);
-        if(hurry) {
-            self.kill();
-        }
-    },
-    stop: function(cb) {
-        var self = this;
-        self.__base(cb);
-        self.kill();
+        this.__base(hurry, cb);
+        if(hurry)
+            this.kill();
     },
     error: function(err) {
         // si l'erreur est juste une chaîne de caractères et non un véritable objet Error, on la transforme
@@ -56,21 +84,53 @@ var StepDeleteEdges = inherit(Step, {
         err.fatal = true;
         this.__base(err);
     },
-    done: function() {
+    done: function(cb) {
         var self = this;
-        self.__base(function() {
-            self.clean();
-        });
+        // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
+        var remBase = self.__base.bind(self);
+        if(!self.outputFile) {
+            self.error('[Step] Pas de fichier de sortie...');
+            remBase(cb);
+        }
+        else {
+            fs.stat(self.outputFile, function(err, stats) {
+                if(err) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier :' + err + '.');
+                    remBase(cb);
+                    // on ne va pas plus loin
+                    return;
+                }
+                self._process._model3d.file({code: 'mesh'}, function(err, file) {
+                    if(err) {
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh:' + err + '.');
+                        remBase(cb);
+                        // on ne va pas plus loin
+                        return;
+                    }
+                    if(!file || !file.mesh) {
+                        self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
+                            if(err)
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh :' + err + '.');
+                            remBase(cb);
+                        });
+                    }
+                    else {
+                        file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
+                            if(err)
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh :' + err + '.');
+                            remBase(cb);
+                        });
+                    }
+                });
+            });
+        }
     },
     clean: function(cb) {
-        var self = this;
-        if(self.process)
-            self.process.kill(function() {
-                if(cb)
-                    cb();
-            });
-        else if(cb)
+        if(this.process)
+            this.process.kill();
+        if(cb)
             cb();
     }
 });
 
+module.exports = StepPoisson;

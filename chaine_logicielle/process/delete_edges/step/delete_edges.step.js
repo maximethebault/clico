@@ -10,36 +10,52 @@ var StepDeleteEdges = inherit(Step, {
         // l'objet qui contiendra l'appel à cloudcompare
         this.process = null;
     },
-    start: function() {
+    processMeshlab: function(data) {
+        var matches = data.match(/ERROR/g);
+        if(matches) {
+            this.error(matches[0]);
+        }
+    },
+    start: function(cb) {
         var self = this;
+        self.__base(function(err) {
+            cb(err);
+            self._process._model3d.file({code: 'mesh'}, function(err, files) {
+                if(err) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
+                    // on ne va pas plus loin
+                    return;
+                }
+                if(!files || !files.mesh) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : aucun mesh disponible en entrée');
+                    // on ne va pas plus loin
+                    return;
+                }
+                var inputFile = files.mesh._attrs.path;
 
-        // TODO: passage des noms de fichiers entre Process
-        var inputFile = 'input.ply';
+                /*
+                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _MESH + la nouvelle extension
+                 */
+                var splitInput = inputFile.split('.');
+                self.outputFile = splitInput[0] + '_EDGES.ply';
 
-        // nom du fichier en sortie, composé du nom du fichier en entrée + _NORMAL.ply
-        var splitInput = inputFile.split('.');
-        splitInput.pop();
-        var outputFile = splitInput.join('.') + '_NORMAL.ply';
 
-        self.process = spawn('meshlabserver', ['-i', inputFile, '-o', outputFile, '-m', 'vn', '-s', 'script_delete.mlx']);
-
-        self.process.on('error', self.error.bind(self));
-        self.process.on('exit', function() {
-            self.process = null;
-            self.done();
+                self.process = spawn('meshlabserver', ['-i', inputFile, '-o', self.outputFile, '-m', 'vn', '-s', 'script_delete.mlx']);
+                self.process.on('error', self.error.bind(self));
+                self.process.on('data', self.processMeshlab.bind(self));
+                self.process.on('close', function() {
+                    self.process = null;
+                    self.done(function() {
+                        self.clean();
+                    });
+                });
+            });
         });
     },
     pause: function(hurry, cb) {
-        var self = this;
-        self.__base(hurry, cb);
-        if(hurry) {
-            self.kill();
-        }
-    },
-    stop: function(cb) {
-        var self = this;
-        self.__base(cb);
-        self.kill();
+        this.__base(hurry, cb);
+        if(hurry)
+            this.kill();
     },
     error: function(err) {
         // si l'erreur est juste une chaîne de caractères et non un véritable objet Error, on la transforme
@@ -49,21 +65,53 @@ var StepDeleteEdges = inherit(Step, {
         err.fatal = true;
         this.__base(err);
     },
-    done: function() {
+    done: function(cb) {
         var self = this;
-        self.__base(function() {
-            self.clean();
-        });
+        // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
+        var remBase = self.__base.bind(self);
+        if(!self.outputFile) {
+            self.error('[Step] Pas de fichier de sortie...');
+            remBase(cb);
+        }
+        else {
+            fs.stat(self.outputFile, function(err, stats) {
+                if(err) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier :' + err + '.');
+                    remBase(cb);
+                    // on ne va pas plus loin
+                    return;
+                }
+                self._process._model3d.file({code: 'mesh'}, function(err, file) {
+                    if(err) {
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh:' + err + '.');
+                        remBase(cb);
+                        // on ne va pas plus loin
+                        return;
+                    }
+                    if(!file || !file.mesh) {
+                        self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
+                            if(err)
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh :' + err + '.');
+                            remBase(cb);
+                        });
+                    }
+                    else {
+                        file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
+                            if(err)
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh :' + err + '.');
+                            remBase(cb);
+                        });
+                    }
+                });
+            });
+        }
     },
     clean: function(cb) {
-        var self = this;
-        if(self.process)
-            self.process.kill(function() {
-                if(cb)
-                    cb();
-            });
-        else if(cb)
+        if(this.process)
+            this.process.kill();
+        if(cb)
             cb();
     }
 });
 
+module.exports = StepDeleteEdges;
