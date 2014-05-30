@@ -55,6 +55,7 @@ var StepComputeMatch = inherit(Step, {
         var self = this;
         var matches = /^\*command processed\*$/.exec(line);
         if(matches) {
+            self.updateProgress(100);
             setTimeout(function() {
                 self.done(function(err) {
                     if(err)

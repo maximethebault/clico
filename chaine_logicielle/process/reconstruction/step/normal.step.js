@@ -1,8 +1,10 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
+var path = require('path');
 var Step = require('../../../Step');
 var inherit = require('inherit');
 var _ = require('underscore');
+var Constants = require('../../../Constants');
 
 var StepNormalCalculation = inherit(Step, {
     __constructor: function(attrs, process) {
@@ -19,6 +21,14 @@ var StepNormalCalculation = inherit(Step, {
         if(matches) {
             this.needNormalCalculation = true;
         }
+        else {
+            matches = data.match(/Input Points: ([0-9]+)/g);
+            if(matches) {
+                if(matches[1] > Constants.MAX_POINT_LIMIT) {
+                    this.error('[Step] Etape "' + this._attrs.name + '" (ID = ' + this._attrs.id + ') : le nuage de points en entrée est trop volumineux ! ' + matches[2] + ' points détectés, limite fixée à ' + Constants.MAX_POINT_LIMIT + '.');
+                }
+            }
+        }
     },
     processMeshlab: function(data) {
         // il est possible que la progression ne marche pas pour Meshlab
@@ -26,6 +36,14 @@ var StepNormalCalculation = inherit(Step, {
         var matches = data.match(/Fitting planes/g);
         if(matches) {
             this.updateProgress(((this.progress++) / 91) * 100);
+        }
+        else {
+            matches = data.match(/Mesh (.*) loaded has ([0-9]+) vn/g);
+            if(matches) {
+                if(matches[2] > Constants.MAX_POINT_LIMIT) {
+                    this.error('[Step] Etape "' + this._attrs.name + '" (ID = ' + this._attrs.id + ') : le nuage de points en entrée est trop volumineux ! ' + matches[2] + ' points détectés, limite fixée à ' + Constants.MAX_POINT_LIMIT + '.');
+                }
+            }
         }
     },
     start: function(cb) {
@@ -36,7 +54,7 @@ var StepNormalCalculation = inherit(Step, {
             self.progress = 0;
             self._process._model3d.file({code: 'pointCloud'}, function(err, files) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers : ' + err + '.');
                     // on ne va pas plus loin
                     return;
                 }
@@ -50,9 +68,9 @@ var StepNormalCalculation = inherit(Step, {
                  * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _NORMAL + la nouvelle extension
                  */
                 var splitInput = self.inputFile.split('.');
-                self.outputFile = splitInput[0] + '_NORMAL.ply';
-
-                self.process = spawn('PoissonRecon.x64', ['--in', self.inputFile]);
+                self.outputFile = splitInput[0] + '.normal.ply';
+                // grâce à la commande suivante, on teste le fichier en entrée
+                self.process = spawn('PoissonRecon.x64', ['--in', self.inputFile, '--depth', '0', '--verbose']);
                 self.process.stdout.setEncoding('utf-8');
                 self.process.stdout.on('data', self.processPoissonRecon.bind(self));
                 self.process.on('error', self.error.bind(self));
@@ -72,10 +90,11 @@ var StepNormalCalculation = inherit(Step, {
             });
             return;
         }
-        self.process = spawn('meshlabserver', ['-i', self.inputFile, '-o', self.outputFile, '-m', 'vn', '-s', 'script_normal.mlx']);
-
+        self.process = spawn('meshlabserver', ['-i', self.inputFile, '-o', self.outputFile, '-m', 'vn', '-s', path.join(__dirname, 'meshlab_normal.mlx')]);
         self.process.stdout.setEncoding('utf-8');
+        self.process.stderr.setEncoding('utf-8');
         self.process.stdout.on('data', self.processMeshlab.bind(self));
+        self.process.stderr.on('data', self.processMeshlab.bind(self));
         self.process.on('error', self.error.bind(self));
         self.process.on('exit', function() {
             self.process = null;
@@ -112,14 +131,14 @@ var StepNormalCalculation = inherit(Step, {
         else {
             fs.stat(self.outputFile, function(err, stats) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
                     remBase(cb);
                     // on ne va pas plus loin
                     return;
                 }
                 self._process._model3d.file({code: 'pointCloud'}, function(err, file) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points : ' + err + '.');
                         remBase(cb);
                         // on ne va pas plus loin
                         return;
@@ -127,14 +146,14 @@ var StepNormalCalculation = inherit(Step, {
                     if(!file || !file.pointCloud) {
                         self._process._model3d.createFile({code: 'pointCloud', path: self.outputFile, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points : ' + err + '.');
                             remBase(cb);
                         });
                     }
                     else {
                         file.pointCloud.update({path: self.outputFile, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points : ' + err + '.');
                             remBase(cb);
                         });
                     }

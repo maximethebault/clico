@@ -85,6 +85,8 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                 res[0].del(function(err) {
                     if(!err)
                         self.hideAndSeekFiles();
+                    if(!$('.process-selected[data-process-id=4]', this.$el).length || !$('.process-selected[data-process-id=5]', this.$el).length)
+                        $('.sampling-warning', this.$el).addClass('hidden');
                 });
             }
         });
@@ -97,6 +99,8 @@ window.cnpao.View.Model3dUnconfigured = inherit({
         proc.create(function(err) {
             if(!err)
                 self.hideAndSeekFiles();
+            if($('.process-selected[data-process-id=4]', this.$el).length && $('.process-selected[data-process-id=5]', this.$el).length)
+                $('.sampling-warning', this.$el).removeClass('hidden');
         });
     },
     paramChange: function(ev, newValue, specParamId, model3dId) {

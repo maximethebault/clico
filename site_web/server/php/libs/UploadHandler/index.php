@@ -13,6 +13,8 @@
 
 error_reporting(E_ALL | E_STRICT);
 
+// TODO: renommer fichiers avec caractères spéciaux !!
+
 session_start();
 
 require 'UploadHandler.php';

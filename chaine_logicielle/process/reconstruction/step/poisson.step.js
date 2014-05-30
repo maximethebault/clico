@@ -22,7 +22,7 @@ var StepPoisson = inherit(Step, {
             cb(err);
             self._process._model3d.file({code: ['pointCloud', 'mesh']}, function(err, files) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers : ' + err + '.');
                     // on ne va pas plus loin
                     return;
                 }
@@ -40,15 +40,14 @@ var StepPoisson = inherit(Step, {
                 if(files.mesh)
                     self.outputFile = files.mesh._attrs.path;
                 else
-                    self.outputFile = splitInput[0] + '_MESH.ply';
+                    self.outputFile = splitInput[0] + '.mesh.ply';
 
                 self._process._model3d.param({code: ['poissonDepth', 'poissonWeight']}, function(err, param) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des paramètres :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des paramètres : ' + err + '.');
                         // on ne va pas plus loin
                         return;
                     }
-                    console.log(param);
                     if(!param || !param.poissonDepth || !param.poissonWeight) {
                         self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer les paramètres.');
                         // on ne va pas plus loin
@@ -60,7 +59,10 @@ var StepPoisson = inherit(Step, {
 
                     self.process = spawn('PoissonRecon.x64', ['--in', inputFile, '--out', self.outputFile, '--depth', poissonDepth, '--pointWeight', poissonWeight, '--verbose']);
                     self.process.on('error', self.error.bind(self));
-                    self.process.on('data', self.processPoissonRecon.bind(self));
+                    self.process.stdout.setEncoding('utf-8');
+                    self.process.stderr.setEncoding('utf-8');
+                    self.process.stdout.on('data', self.processPoissonRecon.bind(self));
+                    self.process.stderr.on('data', self.processPoissonRecon.bind(self));
                     self.process.on('close', function() {
                         self.process = null;
                         self.done(function() {
@@ -89,20 +91,20 @@ var StepPoisson = inherit(Step, {
         // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
         var remBase = self.__base.bind(self);
         if(!self.outputFile) {
-            self.error('[Step] Pas de fichier de sortie...');
+            self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : un des fichiers de sortie est manquant.');
             remBase(cb);
         }
         else {
             fs.stat(self.outputFile, function(err, stats) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
                     remBase(cb);
                     // on ne va pas plus loin
                     return;
                 }
                 self._process._model3d.file({code: 'mesh'}, function(err, file) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh:' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh : ' + err + '.');
                         remBase(cb);
                         // on ne va pas plus loin
                         return;
@@ -110,14 +112,14 @@ var StepPoisson = inherit(Step, {
                     if(!file || !file.mesh) {
                         self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh : ' + err + '.');
                             remBase(cb);
                         });
                     }
                     else {
                         file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh : ' + err + '.');
                             remBase(cb);
                         });
                     }

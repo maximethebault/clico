@@ -34,7 +34,7 @@ var StepSpatialSubsampling = inherit(Step, {
             cb(err);
             self._process._model3d.file({code: 'pointCloud'}, function(err, files) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers : ' + err + '.');
                     // on ne va pas plus loin
                     return;
                 }
@@ -50,10 +50,11 @@ var StepSpatialSubsampling = inherit(Step, {
                  */
                 var splitInput = inputFile.split('.');
                 self.outputFile = splitInput[0] + '_SPATIAL_SUBSAMPLED.asc';
+                self.outputFileRenamed = splitInput[0] + '.subsampled.asc';
 
                 self._process._model3d.param({code: 'subsamplingDensity'}, function(err, param) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du paramètre de densité :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du paramètre de densité : ' + err + '.');
                         // on ne va pas plus loin
                         return;
                     }
@@ -68,22 +69,39 @@ var StepSpatialSubsampling = inherit(Step, {
                     // on force la création du fichier pour que fs.watch ne provoque pas d'erreur si le fichier n'existe pas
                     create_file(self.outputFile, function(err) {
                         if(err) {
-                            self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de créer le fichier de sortie :' + err + '.');
+                            self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de créer le fichier de sortie : ' + err + '.');
                             // on ne va pas plus loin
                             return;
                         }
                         self.process = spawn('cloudcompare', ['-NO_TIMESTAMP', '-C_EXPORT_FMT', 'ASC', '-PREC', '12', '-SEP', 'SPACE', '-O', inputFile, '-SS', 'SPATIAL', subsamplingDensity]);
                         self.process.on('error', self.error.bind(self));
+                        self.process.on('close', function() {
+                            self.done(function() {
+                                self.clean();
+                            });
+                        });
+                        // fonction appelé quand le fichier a été détecté comme complet
+                        self.watcherFunction = function() {
+                            // on essaie de déplacer le fichier
+                            fs.rename(self.outputFile, self.outputFileRenamed, function(err) {
+                                // s'il y a une erreur, c'est qu'il est encore locké par cloudcompare : on relance l'attente !
+                                if(err)
+                                    self.timeout = setTimeout(self.watcherFunction.bind(self), self.__self.watcherTimeout);
+                                else
+                                    self.process.kill();
+                            });
+                        };
                         self.watcher = fs.watch(self.outputFile, function(event) {
                             if(event == 'change') {
                                 // si la taille du fichier a changé, ou si sa date de dernière modification a changé, on reset le timer
                                 clearTimeout(self.timeout);
-                                self.timeout = setTimeout(function() {
-                                    self.done(function() {
-                                        self.clean();
-                                    });
-                                }, self.__self.watcherTimeout);
+                                self.timeout = setTimeout(self.watcherFunction.bind(self), self.__self.watcherTimeout);
                             }
+                        });
+                        self.watcher.on('error', function(err) {
+                            self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : le watcher a retourné une erreur : ' + err + '.');
+                            if(self.timeout)
+                                clearTimeout(self.timeout);
                         });
                     });
                 });
@@ -108,35 +126,35 @@ var StepSpatialSubsampling = inherit(Step, {
         // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
         var remBase = self.__base.bind(self);
         if(!self.outputFile) {
-            self.error('[Step] Pas de fichier de sortie...');
+            self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : un des fichiers de sortie est manquant.');
             remBase(cb);
         }
         else {
-            fs.stat(self.outputFile, function(err, stats) {
+            fs.stat(self.outputFileRenamed, function(err, stats) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
                     remBase(cb);
                     // on ne va pas plus loin
                     return;
                 }
                 self._process._model3d.file({code: 'pointCloud'}, function(err, file) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points : ' + err + '.');
                         remBase(cb);
                         // on ne va pas plus loin
                         return;
                     }
                     if(!file || !file.pointCloud) {
-                        self._process._model3d.createFile({code: 'pointCloud', path: self.outputFile, size: stats.size}, function(err) {
+                        self._process._model3d.createFile({code: 'pointCloud', path: self.outputFileRenamed, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points : ' + err + '.');
                             remBase(cb);
                         });
                     }
                     else {
-                        file.pointCloud.update({path: self.outputFile, size: stats.size}, function(err) {
+                        file.pointCloud.update({path: self.outputFileRenamed, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points : ' + err + '.');
                             remBase(cb);
                         });
                     }

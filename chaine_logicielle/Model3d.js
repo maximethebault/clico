@@ -52,16 +52,7 @@ var Model3d = inherit({
             if(rows.length) {
                 var delete_request = rows[0].delete_request;
                 if(delete_request) {
-                    if(self._attrs.state == Constants.STATE_STOPPED) {
-                        self.destroy();
-                    }
-                    else {
-                        self.stop(function(err) {
-                            if(err)
-                                console.error('[Model3d] Impossible d\'arrêter le processus : ' + err + '.');
-                            resetTimer();
-                        });
-                    }
+                    self.destroy();
                 }
                 else {
                     var newCommand = rows[0].command;
@@ -337,7 +328,20 @@ var Model3d = inherit({
                 cb();
             return;
         }
-        self.commandInProgress = true;
+        if(self._attrs.state === Constants.STATE_STOPPED) {
+            self.commandInProgress = true;
+            self.destroyFiles(cb);
+        }
+        else {
+            self.stop(function(err) {
+                if(err)
+                    console.error('[Model3d] Impossible d\'arrêter le processus : ' + err + '.');
+                self.destroyFiles(cb);
+            });
+        }
+    },
+    destroyFiles: function(cb) {
+        var self = this;
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') supprimé');
         // on commence par supprimer tout le répertoire 'data'
         wrench.rmdirRecursive(self.basePath, true, function(err) {

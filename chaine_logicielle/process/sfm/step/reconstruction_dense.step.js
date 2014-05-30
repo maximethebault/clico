@@ -52,14 +52,14 @@ var StepReconstructionDense = inherit(Step, {
         else {
             fs.stat(self.pointCloudPath, function(err, stats) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
                     remBase(cb);
                     // on ne va pas plus loin
                     return;
                 }
                 self._process._model3d.file({code: 'pointCloud'}, function(err, file) {
                     if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points :' + err + '.');
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points : ' + err + '.');
                         remBase(cb);
                         // on ne va pas plus loin
                         return;
@@ -67,14 +67,14 @@ var StepReconstructionDense = inherit(Step, {
                     if(!file || !file.pointCloud) {
                         self._process._model3d.createFile({code: 'pointCloud', path: self.pointCloudPath, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points : ' + err + '.');
                             remBase(cb);
                         });
                     }
                     else {
                         file.pointCloud.update({path: self.pointCloudPath, size: stats.size}, function(err) {
                             if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points : ' + err + '.');
                             remBase(cb);
                         });
                     }

@@ -22,6 +22,7 @@
                 </td>
             </tr>
         </table>
+        <div class="sampling-warning{% if(!o.processSelected[4] || !o.processSelected[5]) { %}  hidden{% } %}" style="text-align: center;"><span class="label label-warning">Attention</span> Le sampling est incompatible avec le texturing</div>
     </div>
     <div>
         <h3>2. Paramétrage</h3>

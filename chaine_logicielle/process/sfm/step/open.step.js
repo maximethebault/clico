@@ -22,7 +22,7 @@ var StepOpen = inherit(Step, {
             // Il va falloir créer ce fichier !
             self._process._model3d.file({code: 'sfmImages'}, function(err, files) {
                 if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers :' + err + '.');
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des fichiers : ' + err + '.');
                     // on ne va pas plus loin
                     return;
                 }
@@ -39,7 +39,7 @@ var StepOpen = inherit(Step, {
                         }).join(endOfLine),
                         function(err) {
                             if(err) {
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de l\'écriture de la liste des images :' + err + '.');
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de l\'écriture de la liste des images : ' + err + '.');
                                 // on ne va pas plus loin
                                 return;
                             }
@@ -72,6 +72,7 @@ var StepOpen = inherit(Step, {
         var self = this;
         var matches = /^\*command processed\*$/.exec(line);
         if(matches) {
+            self.updateProgress(100);
             setTimeout(function() {
                 self.done(function(err) {
                     if(err)

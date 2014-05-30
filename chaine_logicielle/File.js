@@ -75,7 +75,7 @@ var File = inherit({
                         self.tabCachedModels[row.id] = new File(row, model3d);
                     var file = self.tabCachedModels[row.id];
                     if(objModels.hasOwnProperty(row.code)) {
-                        objModels[row.code].push(file)
+                        objModels[row.code].push(file);
                     }
                     else {
                         if(row.multiplicity_min > 1 || row.multiplicity_min === 0) {
