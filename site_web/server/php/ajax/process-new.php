@@ -29,7 +29,7 @@ else {
     try {
         $processesExisting = Process::find('all', array('include' => 'specProcess', 'conditions' => array('model3d_id = ?', intval($_POST['model3d_id']))));
         foreach($processesExisting as $processExisting) {
-            if($processExisting->ordering == $specProcess->ordering)
+            if($processExisting->specProcess->ordering == $specProcess->ordering)
                 die(json_encode(array('error' => 1, 'message' => "Un Process avec le même ordering existe déjà !")));
         }
         $process->save();

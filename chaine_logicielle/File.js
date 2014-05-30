@@ -12,6 +12,19 @@ var File = inherit({
         this._attrs = attrs;
         this._model3d = model3d;
     },
+    create: function(cb) {
+        var self = this;
+        var code = self._attrs.code;
+        sqlCon.query('INSERT INTO file SET ?, spec_file_id=(SELECT id FROM spec_file WHERE code=? LIMIT 1)', [_.omit(self._attrs, 'code', 'multiplicity_min'), code], function(err, res) {
+            if(err) {
+                cb(err);
+                return;
+            }
+            self._attrs.id = res.insertId;
+            self.__self.tabCachedModels[self._attrs.id] = self;
+            cb();
+        });
+    },
     getName: function() {
         var nameSplit = this._attrs.path.split(/\\|\//);
         return nameSplit.pop();
@@ -32,6 +45,10 @@ var File = inherit({
     }
 }, {
     tabCachedModels: {},
+    create: function(options, model3d, cb) {
+        var file = new File(options, model3d);
+        file.create(cb);
+    },
     /**
      * Récupère des File depuis la base de données
      *

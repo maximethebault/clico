@@ -157,7 +157,8 @@ var Process = inherit({
     error: function(err) {
         if(this._ignoreError)
             return;
-        this._ignoreError = true;
+        if(err.fatal)
+            this._ignoreError = true;
         this._model3d.error(err);
     },
     done: function(cb) {

@@ -39,7 +39,7 @@ var Step = inherit({
     },
     /**
      * Met à jour la progression d'une étape
-     * 
+     *
      * @param {int} newProgress la nouvelle progression (pourcentage compris entre 0 et 100)
      */
     updateProgress: function(newProgress) {
@@ -58,7 +58,7 @@ var Step = inherit({
     },
     /*
      * Démarre la Step courante
-     * 
+     *
      * @param {Function} cb appelé quand le démarrage de la Step est effectif
      */
     start: function(cb) {
@@ -67,6 +67,7 @@ var Step = inherit({
             self._running = true;
             self._ignoreError = false;
             self._pendingCallback = null;
+            self._order = null;
             console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') lancée');
             self.update({
                 state: Constants.STATE_RUNNING
@@ -75,13 +76,17 @@ var Step = inherit({
     },
     /**
      * Met en pause la Step courante
-     * 
+     *
      * @param {boolean} hurry si la Step courante doit être interrompue dès que possible au risque de devoir par la suite la recommencer
      * @param {Function} cb appelé quand la mise en pause est effective, c'est-à-dire une fois que la Step a été vraiment arrêtée
      */
     pause: function(hurry, cb) {
         var self = this;
         console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') mise en pause');
+        if(!self._running) {
+            cb();
+            return;
+        }
         self._order = Constants.COMMAND_PAUSE;
         self._pendingCallback = cb;
         if(hurry)
@@ -89,12 +94,16 @@ var Step = inherit({
     },
     /*
      *
-     *  
+     *
      * @param {Function} cb appelé quand la chaine de traitement est vraiment terminée
      */
     stop: function(cb) {
         var self = this;
         console.info('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') arrêtée');
+        if(!self._running) {
+            cb();
+            return;
+        }
         self._order = Constants.COMMAND_STOP;
         self._ignoreError = true;
         self._pendingCallback = cb;
@@ -117,6 +126,10 @@ var Step = inherit({
         var self = this;
         if(!self._running) {
             cb();
+            if(self._pendingCallback) {
+                self._pendingCallback();
+                self._pendingCallback = undefined;
+            }
             return;
         }
         self._running = false;
@@ -141,7 +154,7 @@ var Step = inherit({
     },
     /**
      * Fonction chargée de nettoyer les processus et autres créés pour cette Step
-     * 
+     *
      * @param {Function} cb la fonction à exécuter une fois le ménage fait
      */
     clean: function(cb) {

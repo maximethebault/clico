@@ -54,15 +54,8 @@ var StepOpen = inherit(Step, {
     },
     pause: function(hurry, cb) {
         this.__base(hurry, cb);
-        if(hurry) {
-            console.log("I'm in hurry");
-            if(this._process.socket) {
-                console.log("I've got a socket, and I'm ready to use it if needed!");
-                this._process.socket.write('32978\n');
-            }
-            else
-                this.kill();
-        }
+        if(hurry)
+            this.kill();
     },
     clean: function(cb) {
         cb();

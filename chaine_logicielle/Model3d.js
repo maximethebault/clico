@@ -96,6 +96,14 @@ var Model3d = inherit({
                 resetTimer();
         });
     },
+    createFile: function(options, cb) {
+        if(_.isFunction(options)) {
+            cb = options;
+            options = {};
+        }
+        _.extend(options, {model3d_id: this._attrs.id});
+        File.create(options, this, cb);
+    },
     file: function(options, cb) {
         if(_.isFunction(options)) {
             cb = options;
@@ -325,7 +333,8 @@ var Model3d = inherit({
         var self = this;
         // on empêche la possibilité de donner un ordre alors qu'un autre n'est pas terminé
         if(self.commandInProgress) {
-            cb();
+            if(cb)
+                cb();
             return;
         }
         self.commandInProgress = true;
@@ -354,7 +363,8 @@ var Model3d = inherit({
                 clearTimeout(self.commandWatcher);
             self.destroyed = true;
             self.removeCache();
-            cb();
+            if(cb)
+                cb();
         });
     },
     sendNotification: function(message) {

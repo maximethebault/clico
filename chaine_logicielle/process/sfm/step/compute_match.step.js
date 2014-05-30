@@ -15,7 +15,7 @@ var StepComputeMatch = inherit(Step, {
          * Cette étape peut être divisée en deux sous-étapes :
          * - dans un premier temps, détection + extraction des features SIFT de toutes les images
          * - dans un second temps, comparaison une à une de toutes les paires d'images possibles
-         * 
+         *
          * Pour établir la progression, il nous faut donc établir le nombre d'évènements qui surviendront durant l'ensemble de l'étape :
          * - Première sous-étape : autant de détection + extraction que d'images
          * - Deuxième sous-étape : n*(n+1)/2 (suite arithmétique)
@@ -37,12 +37,8 @@ var StepComputeMatch = inherit(Step, {
     },
     pause: function(hurry, cb) {
         this.__base(hurry, cb);
-        if(hurry) {
-            if(this._process.socket)
-                this._process.socket.write('32978\n');
-            else
-                this.kill();
-        }
+        if(hurry)
+            this.kill();
     },
     clean: function(cb) {
         cb();

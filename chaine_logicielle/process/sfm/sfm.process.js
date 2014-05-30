@@ -126,7 +126,7 @@ var ProcessSFM = inherit(Process, {
         promise.then(function() {
             if(self.process)
                 self.process.kill();
-        })
+        });
     }
 }, {
     // VisualSFM utilisera les ports 32500 à 32600

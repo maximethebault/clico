@@ -30,8 +30,9 @@ var Param = inherit({
     tabCachedModels: {},
     get: function(cond, model3d, cb) {
         var self = this;
-        var queryArgs = Utils.getQueryArgs(cond);
-        sqlCon.query('SELECT p.* FROM param p INNER JOIN spec_param sp ON p.spec_param_id=sp.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
+        var model3d_id = cond.model3d_id;
+        var queryArgs = Utils.getQueryArgs(_.omit(cond, 'model3d_id'));
+        sqlCon.query('SELECT p.*, sp.code, sp.value_default FROM spec_param sp LEFT JOIN param p ON p.spec_param_id=sp.id WHERE (p.id IS NULL OR p.model3d_id=' + model3d_id + ') AND (' + queryArgs.where + ')', queryArgs.args, function(err, rows) {
             if(err) {
                 var message = '[Param] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);
@@ -41,6 +42,8 @@ var Param = inherit({
                 var tabKeys = [];
                 var tabModels = _.map(rows, function(row) {
                     tabKeys.push(row.code);
+                    if(!row.id)
+                        return new Param(row, model3d);
                     if(self.tabCachedModels.hasOwnProperty(row.id))
                         _.extend(self.tabCachedModels[row.id]._attrs, row);
                     else

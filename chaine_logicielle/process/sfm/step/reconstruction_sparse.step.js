@@ -31,12 +31,8 @@ var StepReconstructionSparse = inherit(Step, {
     },
     pause: function(hurry, cb) {
         this.__base(hurry, cb);
-        if(hurry) {
-            if(this._process.socket)
-                this._process.socket.write('32978\n');
-            else
-                this.kill();
-        }
+        if(hurry)
+            this.kill();
     },
     clean: function(cb) {
         cb();
