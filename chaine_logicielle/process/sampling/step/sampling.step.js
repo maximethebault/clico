@@ -1,6 +1,7 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var inherit = require('inherit');
 var _ = require('underscore');
 
@@ -17,9 +18,6 @@ function create_file(file, cb) {
         });
     });
 }
-
-
-// TODO change output to a point cloud !
 
 var StepSampling = inherit(Step, {
     __constructor: function(attrs, process) {
@@ -48,12 +46,8 @@ var StepSampling = inherit(Step, {
                 }
                 var inputFile = files.mesh._attrs.path;
 
-                /*
-                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _RESAMPLED + la nouvelle extension
-                 */
-                var splitInput = inputFile.split('.');
-                self.outputFile = splitInput[0] + '_SAMPLED_POINTS.asc';
-                self.outputFileRenamed = splitInput[0] + '.sampled.asc';
+                self.outputFile = Utils.getReducedPath(inputFile) + '_SAMPLED_POINTS.asc';
+                self.outputFileRenamed = Utils.getReducedPath(inputFile) + '.sampled.asc';
 
                 self._process._model3d.param({code: 'samplingPointNumber'}, function(err, param) {
                     if(err) {
@@ -133,35 +127,11 @@ var StepSampling = inherit(Step, {
             remBase(cb);
         }
         else {
-            fs.stat(self.outputFileRenamed, function(err, stats) {
-                if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
-                    remBase(cb);
-                    // on ne va pas plus loin
-                    return;
-                }
-                self._process._model3d.file({code: 'mesh'}, function(err, file) {
-                    if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh : ' + err + '.');
-                        remBase(cb);
-                        // on ne va pas plus loin
-                        return;
-                    }
-                    if(!file || !file.mesh) {
-                        self._process._model3d.createFile({code: 'mesh', path: self.outputFileRenamed, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                    else {
-                        file.mesh.update({path: self.outputFileRenamed, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                });
+            var outputToCheck = [];
+            if(self.outputFileRenamed)
+                outputToCheck.push({path: self.outputFileRenamed, code: 'pointCloud', name: 'nuage de point'});
+            self.saveFiles(outputToCheck, function() {
+                remBase(cb);
             });
         }
     },

@@ -1,22 +1,27 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var inherit = require('inherit');
 var _ = require('underscore');
 var Constants = require('../../../Constants');
 
-var StepNormalCalculation = inherit(Step, {
+var StepCheckSize = inherit(Step, {
     __constructor: function(attrs, process) {
         this.__base(attrs, process);
         // l'objet qui contiendra l'appel à cloudcompare
         this.process = null;
+        // indique si le nuage a pu être chargé dans meshlabserver
+        this.hasLoaded = false;
     },
     processMeshlab: function(data) {
-        var matches = data.match(/Mesh (.*) loaded has ([0-9]+) vn/g);
+        var matches = /Mesh (.*) loaded has ([0-9]+) vn/g.exec(data);
         if(matches) {
             if(matches[2] > Constants.MAX_POINT_LIMIT) {
                 this.error('[Step] Etape "' + this._attrs.name + '" (ID = ' + this._attrs.id + ') : le nuage de points en entrée est trop volumineux ! ' + matches[2] + ' points détectés, limite fixée à ' + Constants.MAX_POINT_LIMIT + '.');
             }
+            else
+                this.hasLoaded = true;
         }
     },
     start: function(cb) {
@@ -45,7 +50,7 @@ var StepNormalCalculation = inherit(Step, {
                 self.process.stdout.on('data', self.processMeshlab.bind(self));
                 self.process.stderr.on('data', self.processMeshlab.bind(self));
                 self.process.on('error', self.error.bind(self));
-                self.process.on('exit', function() {
+                self.process.on('close', function() {
                     self.process = null;
                     self.done(function() {
                         self.clean();
@@ -72,6 +77,18 @@ var StepNormalCalculation = inherit(Step, {
         err.fatal = true;
         this.__base(err);
     },
+    done: function(cb) {
+        var self = this;
+        // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
+        var remBase = self.__base.bind(self);
+        if(!self.hasLoaded) {
+            // le nuage de points n'a pas pu être chargé dans meshlabserver, il faut envoyer une erreur
+            self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : le nuage de point n\'a pas pu être chargé dans meshlabserver.');
+            remBase(cb);
+        }
+        else
+            remBase(cb);
+    },
     clean: function(cb) {
         if(this.process)
             this.process.kill();
@@ -80,4 +97,4 @@ var StepNormalCalculation = inherit(Step, {
     }
 });
 
-module.exports = StepNormalCalculation;
+module.exports = StepCheckSize;

@@ -1,6 +1,7 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var inherit = require('inherit');
 var _ = require('underscore');
 
@@ -13,7 +14,7 @@ var StepPoisson = inherit(Step, {
     processPoissonRecon: function(data) {
         var matches = data.match(/ERROR/g);
         if(matches) {
-            this.error(matches[0]);
+            this.error(data);
         }
     },
     start: function(cb) {
@@ -32,15 +33,7 @@ var StepPoisson = inherit(Step, {
                     return;
                 }
                 var inputFile = files.pointCloud._attrs.path;
-
-                /*
-                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _MESH + la nouvelle extension
-                 */
-                var splitInput = inputFile.split('.');
-                if(files.mesh)
-                    self.outputFile = files.mesh._attrs.path;
-                else
-                    self.outputFile = splitInput[0] + '.mesh.ply';
+                self.outputFile = Utils.getReducedPath(inputFile) + '.poisson.ply';
 
                 self._process._model3d.param({code: ['poissonDepth', 'poissonWeight']}, function(err, param) {
                     if(err) {
@@ -95,35 +88,10 @@ var StepPoisson = inherit(Step, {
             remBase(cb);
         }
         else {
-            fs.stat(self.outputFile, function(err, stats) {
-                if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
-                    remBase(cb);
-                    // on ne va pas plus loin
-                    return;
-                }
-                self._process._model3d.file({code: 'mesh'}, function(err, file) {
-                    if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh : ' + err + '.');
-                        remBase(cb);
-                        // on ne va pas plus loin
-                        return;
-                    }
-                    if(!file || !file.mesh) {
-                        self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                    else {
-                        file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                });
+            var outputToCheck = [];
+            outputToCheck.push({path: self.outputFile, code: 'mesh', name: 'mesh'});
+            self.saveFiles(outputToCheck, function() {
+                remBase(cb);
             });
         }
     },

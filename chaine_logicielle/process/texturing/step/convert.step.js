@@ -1,7 +1,7 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
-var deferred = require('deferred');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var Texturing = require('./texturing.step');
 var inherit = require('inherit');
 var _ = require('underscore');
@@ -17,7 +17,7 @@ var StepConvert = inherit(Step, {
     processMeshlab: function(data) {
         var matches = data.match(/ERROR/g);
         if(matches) {
-            this.error(matches[0]);
+            this.error(data);
         }
     },
     start: function(cb) {
@@ -125,53 +125,14 @@ var StepConvert = inherit(Step, {
         var self = this;
         // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
         var remBase = self.__base.bind(self);
-        function checkOutput(path, code, name) {
-            var dfd = deferred();
-            fs.stat(path, function(err, stats) {
-                if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
-                    dfd.resolve();
-                    // on ne va pas plus loin
-                    return;
-                }
-                self._process._model3d.file({code: code}, function(err, file) {
-                    if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du ' + name + ' : ' + err + '.');
-                        dfd.resolve();
-                        // on ne va pas plus loin
-                        return;
-                    }
-                    if(!file || !file[code]) {
-                        self._process._model3d.createFile({code: code, path: path, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du ' + name + ' : ' + err + '.');
-                            dfd.resolve();
-                        });
-                    }
-                    else {
-                        file[code].update({path: path, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du ' + name + ' : ' + err + '.');
-                            dfd.resolve();
-                        });
-                    }
-                });
-            });
-            return dfd.promise;
-        }
         var outputToCheck = [];
         if(self.outputFilePointCloud)
             outputToCheck.push({path: self.outputFilePointCloud, code: 'pointCloud', name: 'nuage de points'});
         if(self.outputFileMesh)
             outputToCheck.push({path: self.outputFileMesh, code: 'mesh', name: 'mesh'});
-        if(_.size(outputToCheck))
-            deferred.map(outputToCheck, function(output) {
-                return checkOutput(output.path, output.code, output.name);
-            }).then(function() {
-                remBase(cb);
-            });
-        else
+        self.saveFiles(outputToCheck, function() {
             remBase(cb);
+        });
     },
     clean: function(cb) {
         if(this.process)

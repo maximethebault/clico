@@ -2,6 +2,7 @@ var spawn = require('child_process').spawn;
 var fs = require('fs');
 var path = require('path');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var inherit = require('inherit');
 var _ = require('underscore');
 
@@ -14,7 +15,7 @@ var StepDeleteEdges = inherit(Step, {
     processMeshlab: function(data) {
         var matches = data.match(/ERROR/g);
         if(matches) {
-            this.error(matches[0]);
+            this.error(data);
         }
     },
     start: function(cb) {
@@ -34,15 +35,8 @@ var StepDeleteEdges = inherit(Step, {
                 }
                 var inputFile = files.mesh._attrs.path;
 
-                /*
-                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _EDGES + la nouvelle extension
-                 */
-                var splitInput = inputFile.split('.');
-                self.outputFile = splitInput[0] + '.edges.ply';
+                self.outputFile = Utils.getReducedPath(inputFile) + '.edges.ply';
 
-                console.log(inputFile);
-                console.log(self.outputFile);
-                console.log(['-i', inputFile, '-o', self.outputFile, '-m', 'vn', '-s', path.join(__dirname, 'meshlab_edges.mlx')].join(' '));
                 self.process = spawn('meshlabserver', ['-i', inputFile, '-o', self.outputFile, '-m', 'vn', '-s', path.join(__dirname, 'meshlab_edges.mlx')]);
                 self.process.on('error', self.error.bind(self));
                 self.process.stdout.setEncoding('utf-8');
@@ -80,35 +74,11 @@ var StepDeleteEdges = inherit(Step, {
             remBase(cb);
         }
         else {
-            fs.stat(self.outputFile, function(err, stats) {
-                if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
-                    remBase(cb);
-                    // on ne va pas plus loin
-                    return;
-                }
-                self._process._model3d.file({code: 'mesh'}, function(err, file) {
-                    if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh : ' + err + '.');
-                        remBase(cb);
-                        // on ne va pas plus loin
-                        return;
-                    }
-                    if(!file || !file.mesh) {
-                        self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                    else {
-                        file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                });
+            var outputToCheck = [];
+            if(self.outputFile)
+                outputToCheck.push({path: self.outputFile, code: 'mesh', name: 'mesh'});
+            self.saveFiles(outputToCheck, function() {
+                remBase(cb);
             });
         }
     },

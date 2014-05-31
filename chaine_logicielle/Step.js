@@ -1,7 +1,9 @@
 var inherit = require('inherit');
 var _ = require('underscore');
+var fs = require('fs');
 var Utils = require('./Utils');
 var Constants = require('./Constants');
+var deferred = require('deferred');
 var sqlCon = global.sqlCon;
 
 var Step = inherit({
@@ -177,6 +179,58 @@ var Step = inherit({
     sendNotification: function(message) {
         message.step_id = this._attrs.id;
         this._process.sendNotification(message);
+    },
+    /*
+     * Fonction qui exécute des vérifications sur les fichiers en sortie, de manière parallèle
+     *
+     * @param {Array} files un tableau d'objets ayant ces champs :
+     *                  - path : le chemin vers le fichier
+     *                  - code : son identifiant en base de données
+     *                  - name : le nom en français, utilisé lors de l'affichage d'erreurs
+     *
+     * @param {Function} cb la fonction à exécuter une fois la vérification terminée
+     */
+    saveFiles: function(files, cb) {
+        var self = this;
+        function checkOutput(path, code, name) {
+            var dfd = deferred();
+            fs.stat(path, function(err, stats) {
+                if(err) {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
+                    dfd.resolve();
+                    // on ne va pas plus loin
+                    return;
+                }
+                self._process._model3d.file({code: code}, function(err, file) {
+                    if(err) {
+                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du ' + name + ' : ' + err + '.');
+                        dfd.resolve();
+                        // on ne va pas plus loin
+                        return;
+                    }
+                    if(!file || !file[code]) {
+                        self._process._model3d.createFile({code: code, path: path, size: stats.size}, function(err) {
+                            if(err)
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du ' + name + ' : ' + err + '.');
+                            dfd.resolve();
+                        });
+                    }
+                    else {
+                        file[code].update({path: path, size: stats.size}, function(err) {
+                            if(err)
+                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du ' + name + ' : ' + err + '.');
+                            dfd.resolve();
+                        });
+                    }
+                });
+            });
+            return dfd.promise;
+        }
+        deferred.map(files, function(file) {
+            return checkOutput(file.path, file.code, file.name);
+        }).then(function() {
+            cb();
+        });
     }
 }, {
     tabCachedModels: {},

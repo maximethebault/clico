@@ -1,6 +1,7 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var inherit = require('inherit');
 var _ = require('underscore');
 
@@ -45,12 +46,8 @@ var StepSpatialSubsampling = inherit(Step, {
                 }
                 var inputFile = files.pointCloud._attrs.path;
 
-                /*
-                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _SPATIAL_SUBSAMPLED + la nouvelle extension
-                 */
-                var splitInput = inputFile.split('.');
-                self.outputFile = splitInput[0] + '_SPATIAL_SUBSAMPLED.asc';
-                self.outputFileRenamed = splitInput[0] + '.subsampled.asc';
+                self.outputFile = Utils.getReducedPath(inputFile) + '_SPATIAL_SUBSAMPLED.asc';
+                self.outputFileRenamed = Utils.getReducedPath(inputFile) + '.subsampled.asc';
 
                 self._process._model3d.param({code: 'subsamplingDensity'}, function(err, param) {
                     if(err) {
@@ -130,35 +127,11 @@ var StepSpatialSubsampling = inherit(Step, {
             remBase(cb);
         }
         else {
-            fs.stat(self.outputFileRenamed, function(err, stats) {
-                if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
-                    remBase(cb);
-                    // on ne va pas plus loin
-                    return;
-                }
-                self._process._model3d.file({code: 'pointCloud'}, function(err, file) {
-                    if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du nuage de points : ' + err + '.');
-                        remBase(cb);
-                        // on ne va pas plus loin
-                        return;
-                    }
-                    if(!file || !file.pointCloud) {
-                        self._process._model3d.createFile({code: 'pointCloud', path: self.outputFileRenamed, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du nuage de points : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                    else {
-                        file.pointCloud.update({path: self.outputFileRenamed, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du nuage de points : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                });
+            var outputToCheck = [];
+            if(self.outputFileRenamed)
+                outputToCheck.push({path: self.outputFileRenamed, code: 'pointCloud', name: 'nuage de point'});
+            self.saveFiles(outputToCheck, function() {
+                remBase(cb);
             });
         }
     },

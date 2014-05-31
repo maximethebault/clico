@@ -1,10 +1,10 @@
 var spawn = require('child_process').spawn;
 var fs = require('fs');
+var path = require('path');
 var Step = require('../../../Step');
+var Utils = require('../../../Utils');
 var inherit = require('inherit');
 var _ = require('underscore');
-
-// TODO: on fait des split sur les ".", mais qu'est-ce qui se passe si ces points sont dans les noms de répertoires ? Drame. Fix this!
 
 var StepTexturing = inherit(Step, {
     __constructor: function(attrs, process) {
@@ -17,7 +17,6 @@ var StepTexturing = inherit(Step, {
         this.stopYaLoop = false;
     },
     processTexturer: function(data) {
-        console.log(data);
         var matches = /1 * 1 triangle/.exec(data);
         if(matches)
             this.processHasFailed = true;
@@ -40,11 +39,9 @@ var StepTexturing = inherit(Step, {
                 self.pointCloudPath = files.pointCloud._attrs.path;
                 self.meshPath = files.mesh._attrs.path;
 
-                /*
-                 * Il nous faut le nom du fichier en sortie, qui est composé du nom du fichier en entrée + _TEXTURE + la nouvelle extension
-                 */
-                var splitInput = self.meshPath.split('.');
-                self.outputFile = splitInput[0] + '.textured.obj';
+                self.outputFileObj = Utils.getReducedPath(self.meshPath) + '.textured.obj';
+                self.outputFilePng = Utils.getReducedPath(self.meshPath) + '.textured.obj.png';
+                self.outputFileMtl = Utils.getReducedPath(self.meshPath) + '.textured.mtl';
 
                 self._process._model3d.param({code: 'texturingBorder'}, function(err, param) {
                     if(err) {
@@ -74,8 +71,7 @@ var StepTexturing = inherit(Step, {
         if(self.stopYaLoop)
             return;
         self.processHasFailed = false;
-        console.log('MeshTexturer ' + ['-ccloud', self.pointCloudPath, '-mesh', self.meshPath, '-tmesh', self.outputFile, '-width', '4096', '-height', '4096', '-k', '5', '-border', self.texturingBorder, '-v'].join(' '));
-        self.process = spawn('MeshTexturer', ['-ccloud', self.pointCloudPath, '-mesh', self.meshPath, '-tmesh', self.outputFile, '-width', '4096', '-height', '4096', '-k', '5', '-border', self.texturingBorder, '-v']);
+        self.process = spawn('MeshTexturer', ['-ccloud', path.basename(self.pointCloudPath), '-mesh', path.basename(self.meshPath), '-tmesh', path.basename(self.outputFileObj), '-width', '4096', '-height', '4096', '-k', '5', '-border', self.texturingBorder, '-v'], {cwd: path.dirname(self.outputFileObj)});
         self.process.on('error', self.error.bind(self));
         self.process.stdout.setEncoding('utf-8');
         self.process.stderr.setEncoding('utf-8');
@@ -118,40 +114,20 @@ var StepTexturing = inherit(Step, {
         self.stopYaLoop = true;
         // l'appel de self.__base n'est pas supporté trop loin dans le code, on contourne le problème
         var remBase = self.__base.bind(self);
-        if(!self.outputFile) {
+        if(!self.outputFileObj) {
             self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : un des fichiers de sortie est manquant.');
             remBase(cb);
         }
         else {
-            fs.stat(self.outputFile, function(err, stats) {
-                if(err) {
-                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : impossible de récupérer la taille du fichier : ' + err + '.');
-                    remBase(cb);
-                    // on ne va pas plus loin
-                    return;
-                }
-                self._process._model3d.file({code: 'mesh'}, function(err, file) {
-                    if(err) {
-                        self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération du mesh : ' + err + '.');
-                        remBase(cb);
-                        // on ne va pas plus loin
-                        return;
-                    }
-                    if(!file || !file.mesh) {
-                        self._process._model3d.createFile({code: 'mesh', path: self.outputFile, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la création du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                    else {
-                        file.mesh.update({path: self.outputFile, size: stats.size}, function(err) {
-                            if(err)
-                                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la mise à jour du chemin du mesh : ' + err + '.');
-                            remBase(cb);
-                        });
-                    }
-                });
+            var outputToCheck = [];
+            if(self.outputFileObj)
+                outputToCheck.push({path: self.outputFileObj, code: 'textureObj', name: 'mesh texturé'});
+            if(self.outputFilePng)
+                outputToCheck.push({path: self.outputFilePng, code: 'texturePng', name: 'fichier de texture'});
+            if(self.outputFileMtl)
+                outputToCheck.push({path: self.outputFileMtl, code: 'textureMtl', name: 'fichier matériel de la texure'});
+            self.saveFiles(outputToCheck, function() {
+                remBase(cb);
             });
         }
     },

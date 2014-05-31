@@ -1,17 +1,18 @@
 var inherit = require('inherit');
 var _ = require('underscore');
+var path = require('path');
 
 var Utils = inherit({}, {
     /**
      * Fonction qui traduit une condition en une requête SQL accompagnée de sa liste d'arguments
      * Si cond est une chaine de caractères : reste intacte.
      * Si cond est un objet, les clés seront considérés comme des noms de champs, et les valeurs comme la valeur recherchée. On fera un AND entre tous les éléments de l'objet.
-     *                       si la valeur est un tableau, il sera utilisé dans une clause IN (...) 
+     *                       si la valeur est un tableau, il sera utilisé dans une clause IN (...)
      * Exemples :
      * "id=4 AND sal>4" : la condition est une chaîne de caractères, on renvoie tel quel : {where: "id=4 AND sal>4"}
      * {id: 5, sal: 4} : {where: "? AND ?", args: [{id: 5}, {sal: 4}]}
      * {id: 5, model3d_id: [4, 5, 6]} : {where: "id=? AND model3d_id IN (?,?,?)", args: [5, 4, 5, 6]}
-     * 
+     *
      * @param {Object} cond la condition à traduire
      * @returns {Objet} un objet composé de deux champs :
      *                  -> dans le champ 'where' => requête générée
@@ -28,13 +29,13 @@ var Utils = inherit({}, {
             query = [];
             _.each(cond, function(value, key) {
                 if(_.isArray(value)) {
-                    var queryPart = key+' IN (';
+                    var queryPart = key + ' IN (';
                     var inMember = [];
                     _.each(value, function(value) {
                         inMember.push('?');
                         args.push(value);
                     });
-                    queryPart += inMember.join(', ')+')';
+                    queryPart += inMember.join(', ') + ')';
                     query.push(queryPart);
                 }
                 else {
@@ -50,6 +51,20 @@ var Utils = inherit({}, {
             where: query,
             args: args
         };
+    },
+    /**
+     * Retourne un path réduit
+     *
+     * @param {String} pathFile le path original
+     *
+     * @returns {String} le path réduit, c'est-à-dire le répertoire du fichier non modifié, puis le nom du fichier jusqu'au premier point.
+     */
+    getReducedPath: function(pathFile) {
+        var dirs = pathFile.split(/\\|\//);
+        var name = dirs.pop();
+        var nameSplit = name.split('.');
+        dirs.push(nameSplit[0]);
+        return dirs.join(path.sep);
     }
 });
 
