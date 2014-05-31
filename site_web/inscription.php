@@ -28,52 +28,6 @@ function verif_email($str) {
     return true;
 }
 
-//envoyer un mail
-function envoie_mail($email) {
-    return;
-    if(!preg_match("#^[a-z0-9._-]+@(hotmail|live|msn).[a-z]{2,4}$#", $mail)) {
-        $passage_ligne = "\r\n";
-    }
-    else {
-        $passage_ligne = "\n";
-    }
-
-    //=====Déclaration des messages au format texte et au format HTML.
-    $message_txt = "Salut à tous, voici un e-mail envoyé par un script PHP.";
-    $message_html = "<html><head></head><body><b>Salut à tous</b>, voici un e-mail envoyé par un <i>script PHP</i>.</body></html>";
-    //==========
-    //=====Création de la boundary
-    $boundary = "-----=" . md5(rand());
-    //==========
-    //=====Définition du sujet.
-    $sujet = "Hey mon ami !";
-    //=========
-    //=====Création du header de l'e-mail
-    $header = "From: \"Hyukchan Kwon\"<hkwon@insa-rennes.fr>" . $passage_ligne;
-    $header .= "Reply-to: \"Hyukchan Kwon\" <hkwon@insa-rennes.fr>" . $passage_ligne;
-    $header .= "MIME-Version: 1.0" . $passage_ligne;
-    $header .= "Content-Type: multipart/alternative;" . $passage_ligne . " boundary=\"$boundary\"" . $passage_ligne;
-    //==========
-    //=====Création du message.
-    $message = $passage_ligne . "--" . $boundary . $passage_ligne;
-    //=====Ajout du message au format texte.
-    $message.= "Content-Type: text/plain; charset=\"ISO-8859-1\"" . $passage_ligne;
-    $message.= "Content-Transfer-Encoding: 8bit" . $passage_ligne;
-    $message.= $passage_ligne . $message_txt . $passage_ligne;
-    //==========
-    $message.= $passage_ligne . "--" . $boundary . $passage_ligne;
-    //=====Ajout du message au format HTML
-    $message.= "Content-Type: text/html; charset=\"ISO-8859-1\"" . $passage_ligne;
-    $message.= "Content-Transfer-Encoding: 8bit" . $passage_ligne;
-    $message.= $passage_ligne . $message_html . $passage_ligne;
-    //==========
-    $message.= $passage_ligne . "--" . $boundary . "--" . $passage_ligne;
-    $message.= $passage_ligne . "--" . $boundary . "--" . $passage_ligne;
-    //==========
-    //=====Envoi de l'e-mail.
-    mail($email, $sujet, $message, $header);
-    //==========
-}
 if(isset($_POST['name']) || isset($_POST['surname']) || isset($_POST['email']) || isset($_POST['password'])) { // si le formulaire a été envoyé
     if($_POST['name'] != "" && $_POST['surname'] != "" && $_POST['email'] != "" && $_POST['password'] != "") { //si le formulaire est au complet alors
         if(verif_alpha($_POST['name']) && verif_alpha($_POST['surname'])) { //si le prénom et nom sont bien alphabétiques alors
@@ -97,7 +51,6 @@ if(isset($_POST['name']) || isset($_POST['surname']) || isset($_POST['email']) |
                                     'name' => $name,
                                     'surname' => $surname,
                                     'date_added' => $date_added)) or die(print_r($req->errorInfo()));
-                        envoie_mail($email);
                         header("Location: connexion.php?msg=222222");
                     }
                     else { //email existe déjà
