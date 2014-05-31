@@ -39,6 +39,7 @@
                     $i++;
                 }
                 echo '</div>';
+                // TODO: dl des fichiers en sortie !
             }
             ?>
         </div>
