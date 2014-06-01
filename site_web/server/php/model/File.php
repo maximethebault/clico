@@ -12,6 +12,18 @@ class File extends ActiveRecord\Model
         return basename($this->path);
     }
 
+    public function type() {
+        return $this->specFile->name;
+    }
+
+    function size_bella() {
+        $bytes = $this->size;
+        $precision = 2;
+        $unit = ["o", "Ko", "Mo", "Go"];
+        $exp = floor(log($bytes, 1024)) | 0;
+        return round($bytes / (pow(1024, $exp)), $precision) . ' ' . $unit[$exp];
+    }
+
     public function url() {
         return '../' . $this->path;
     }

@@ -138,6 +138,11 @@ body {
     margin: auto;
 }
 
+.model3d-dl {
+    width: 70%;
+    margin: auto;
+}
+
 .model3d-steps h2 {
     text-align: center;
 }

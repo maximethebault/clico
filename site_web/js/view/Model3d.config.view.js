@@ -17,6 +17,7 @@ window.cnpao.View.Model3dConfigured = inherit({
         var self = this;
         var templateData = {
             id: self.model._attrs.id,
+            files: self.model._attrs.files,
             isDone: (self.model._attrs.state == window.cnpao.Constants.STATE_STOPPED && !self.model._attrs.error),
             process: {},
             step: {}

@@ -13,8 +13,6 @@
 
 error_reporting(E_ALL | E_STRICT);
 
-// TODO: renommer fichiers avec caractères spéciaux !!
-
 session_start();
 
 require 'UploadHandler.php';
@@ -35,7 +33,7 @@ function get_full_url() {
 function rename_file($name) {
     if(!preg_match('`^(.*)\.[a-z0-9]{2,5}$`i', $name))
         die('{"files":[{"error":"Extension non valide"}]}');
-    if(!preg_match('`^[a-z0-9]{1,20}\.[a-z0-9]{2,5}$`i', $name)) {
+    if(!preg_match('`^[a-z0-9_\-]{1,20}\.[a-z0-9]{2,5}$`i', $name)) {
         // on renomme le fichier sans demander l'avis de personne
         // il faut qu'un même nom d'entrée donne toujours le même nom de sortie, hi sha1
         $filenameParts = explode('.', $name);
@@ -68,22 +66,36 @@ if(!array_key_exists('spec_file_id', $_REQUEST))
 if(count($_FILES) && count($_FILES['files']['name']) > 1)
     die('{"files":[{"error":"Multi-upload non pris en charge"}]}');
 
+$original_name = null;
+
 // avant tout utilisation des fichiers, on regarde s'ils n'ont pas de noms trop bizarres ; si c'est le cas, on renomme !
-if(count($_FILES) && $_FILES['files']['name'][0])
+if(count($_FILES) && $_FILES['files']['name'][0]) {
+    if(!$original_name)
+        $original_name = $_FILES['files']['name'][0];
     $_FILES['files']['name'][0] = rename_file($_FILES['files']['name'][0]);
-if(array_key_exists('file', $_GET))
+}
+if(array_key_exists('HTTP_CONTENT_DISPOSITION', $_SERVER)) {
+    $nom = rawurldecode(preg_replace('/(^[^"]+")|("$)/', '', $_SERVER['HTTP_CONTENT_DISPOSITION']));
+    if(!$original_name)
+        $original_name = $nom;
+    $_SERVER['HTTP_CONTENT_DISPOSITION'] = 'attachment; filename="' . rename_file($nom) . '"';
+}
+if(array_key_exists('file', $_GET)) {
+    if(!$original_name)
+        $original_name = $_GET['file'];
     $_GET['file'] = rename_file($_GET['file']);
+}
 
 try {
     $model3d = Model3d::find(intval($_REQUEST['model3d_id']), array('include' => array('files')));
     if($model3d->user_id != $_SESSION['id'])
-        die('{"files":[{"error":"La session a expiré. Veuillez vous reconnecter"}]}');
+        die(json_encode(array('files' => array(array('name' => $original_name, 'error' => 'La session a expiré. Veuillez vous reconnecter')))));
     elseif($model3d->configured)
-        die('{"files":[{"error":"Ce modèle 3D n\'est plus configurable !"}]}');
+        die(json_encode(array('files' => array(array('name' => $original_name, 'error' => 'Ce modèle 3D n\'est plus configurable !')))));
     $specFile = SpecFile::find(intval($_REQUEST['spec_file_id']));
 }
 catch(Exception $e) {
-    die('{"files":[{"error":"Le modèle 3D n\'existe plus"}]}');
+    die(json_encode(array('files' => array(array('name' => $original_name, 'error' => 'Le modèle 3D n\'existe plus')))));
 }
 
 $modelDataPath = 'data/' . intval($_REQUEST['model3d_id']) . '/';
@@ -93,8 +105,9 @@ $modelDataPath = 'data/' . intval($_REQUEST['model3d_id']) . '/';
 if(array_key_exists('file', $_GET) || count($_FILES)) {
     $filePath = count($_FILES) ? $_FILES['files']['name'][0] : $_GET['file'];
     $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['model3d_id']), $modelDataPath . $filePath)));
+    // TODO: faire en sorte que l'erreur suivante apparaisse plus tôt, dès le premier chunk uploadé... car sinon l'utilisateur attend TOUT l'upload avant de la voir apparaitre. Pas cool !
     if($file && $file->spec_file_id != intval($_REQUEST['spec_file_id']))
-        die('{"files":[{"error":"Un fichier avec le même nom a déjà été uploadé pour ce modèle, veuillez renommer le fichier."}]}');
+        die(json_encode(array('files' => array(array('name' => $original_name, 'size' => $file->size, 'error' => 'Un fichier avec le même nom a déjà été uploadé pour ce modèle, veuillez renommer le fichier.')))));
 }
 
 $options = array(
@@ -110,7 +123,7 @@ if(count($_FILES) && !$file && $specFile->multiplicity_max) {
             $count++;
     }
     if($count >= $specFile->multiplicity_max)
-        die('{"files":[{"error":"Nombre maximum de fichiers atteint"}]}');
+        die(json_encode(array('files' => array(array('name' => $original_name, 'error' => 'Nombre maximum de fichiers atteint')))));
 }
 
 $options['accept_file_types'] = '`(\.|\/)(' . implode('|', explode(',', $specFile->extension)) . ')$`i';

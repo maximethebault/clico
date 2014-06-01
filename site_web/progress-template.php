@@ -43,5 +43,35 @@
             }
             ?>
         </div>
+        <br />
+        <div class="model3d-dl{% if(!o.isDone) { %} hidden{% } %}">
+            <table class="table table-striped">
+                <tr>
+                    <th>Type</th>
+                    <th>Nom</th>
+                    <th>Taille</th>
+                    <th>Télécharger</th>
+                </tr>
+                {%
+                for(var file in o.files) {
+                %}
+                <tr>
+                    <td>{%=o.files[file].type%}</td>
+                    <td>{%=o.files[file].name%}</td>
+                    <td>{%=o.files[file].size_bella%}</td>
+                    <td>
+                        <a href="download.php?file_id={%=o.files[file].id%}">
+                            <span class="btn btn-success fileinput-button">
+                                <i class="glyphicon glyphicon-download"></i>
+                                <span>Télécharger</span>
+                            </span>
+                        </a>
+                    </td>
+                </tr>
+                {%
+                }
+                %}
+            </table>
+        </div>
     </div>
 </div>
