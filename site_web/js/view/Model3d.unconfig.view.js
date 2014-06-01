@@ -48,7 +48,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                             disableVideoPreview: true,
                             acceptFileTypes: new RegExp('(\.|\/)(' + (window.specFiles[sfid].extension.split(',')).join('|') + ')$', 'i'),
                             maxChunkSize: 5000000, // 5 MB
-                            maxNumberOfFiles: (maxFile !== 0) ? maxFile : undefined,
+                            //maxNumberOfFiles: (maxFile !== 0) ? maxFile : undefined,
                             add: function(e, data) {
                                 var that = this;
                                 $.getJSON('server/php/libs/UploadHandler/', {file: data.files[0].name, model3d_id: self.model._attrs.id, spec_file_id: sfid}, function(result) {
@@ -63,9 +63,10 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                         var filesToShow = [];
                         var incompleteFile = false;
                         _.forEach(self.model._attrs.files, function(file) {
-                            if(!file.incomplete)
+                            console.log(file);
+                            if(!file.incomplete && file.spec_file_id === sfid)
                                 filesToShow.push(file);
-                            else
+                            else if(file.incomplete)
                                 incompleteFile = true;
                         });
                         $('.fileupload', $this).fileupload('option', 'done').call($('.fileupload', $this), $.Event('done'), {result: {files: filesToShow}});

@@ -31,15 +31,51 @@ function get_full_url() {
                     $_SERVER['SERVER_PORT'] === 80 ? '' : ':' . $_SERVER['SERVER_PORT']))) .
             substr($_SERVER['SCRIPT_NAME'], 0, strrpos($_SERVER['SCRIPT_NAME'], '/'));
 }
+
+function rename_file($name) {
+    if(!preg_match('`^(.*)\.[a-z0-9]{2,5}$`i', $name))
+        die('{"files":[{"error":"Extension non valide"}]}');
+    if(!preg_match('`^[a-z0-9]{1,20}\.[a-z0-9]{2,5}$`i', $name)) {
+        // on renomme le fichier sans demander l'avis de personne
+        // il faut qu'un même nom d'entrée donne toujours le même nom de sortie, hi sha1
+        $filenameParts = explode('.', $name);
+        $ext = array_pop($filenameParts);
+        $name = substr(sha1(implode('.', $filenameParts)), 0, 10) . '.' . $ext;
+        // maintenant que le nom est bien déguelasse comme il faut, on peut passer aux choses sérieuses !
+    }
+    return $name;
+}
 if(!array_key_exists('id', $_SESSION))
     die('{"files":[{"error":"Paramètre ID manquant !"}]}');
 if(!array_key_exists('model3d_id', $_REQUEST))
     die('{"files":[{"error":"Paramètre MID manquant !"}]}');
 if(!array_key_exists('spec_file_id', $_REQUEST))
     die('{"files":[{"error":"Paramètre SFID manquant !"}]}');
+// on veut interdire l'upload de plusieurs fichiers à la fois.
+// si plusieurs fichiers, $_FILES ressemble à :
+/*
+ * array(1) {
+  ["files"]=>array(5) {
+  ["name"]=>array(3) {
+  [0]=>string(9)"file0.txt"
+  [1]=>string(9)"file1.txt"
+  [2]=>string(9)"file2.txt"
+  }
+  ...
+  }
+  }
+ */
+if(count($_FILES) && count($_FILES['files']['name']) > 1)
+    die('{"files":[{"error":"Multi-upload non pris en charge"}]}');
+
+// avant tout utilisation des fichiers, on regarde s'ils n'ont pas de noms trop bizarres ; si c'est le cas, on renomme !
+if(count($_FILES) && $_FILES['files']['name'][0])
+    $_FILES['files']['name'][0] = rename_file($_FILES['files']['name'][0]);
+if(array_key_exists('file', $_GET))
+    $_GET['file'] = rename_file($_GET['file']);
 
 try {
-    $model3d = Model3d::find(intval($_REQUEST['model3d_id']));
+    $model3d = Model3d::find(intval($_REQUEST['model3d_id']), array('include' => array('files')));
     if($model3d->user_id != $_SESSION['id'])
         die('{"files":[{"error":"La session a expiré. Veuillez vous reconnecter"}]}');
     elseif($model3d->configured)
@@ -47,11 +83,19 @@ try {
     $specFile = SpecFile::find(intval($_REQUEST['spec_file_id']));
 }
 catch(Exception $e) {
-    die('{"files":[{"error":"Le modèle 3D n\'existe plus."}]}');
+    die('{"files":[{"error":"Le modèle 3D n\'existe plus"}]}');
 }
 
 $modelDataPath = 'data/' . intval($_REQUEST['model3d_id']) . '/';
 @mkdir($modelDataPath, 0777);
+
+
+if(array_key_exists('file', $_GET) || count($_FILES)) {
+    $filePath = count($_FILES) ? $_FILES['files']['name'][0] : $_GET['file'];
+    $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['model3d_id']), $modelDataPath . $filePath)));
+    if($file && $file->spec_file_id != intval($_REQUEST['spec_file_id']))
+        die('{"files":[{"error":"Un fichier avec le même nom a déjà été uploadé pour ce modèle, veuillez renommer le fichier."}]}');
+}
 
 $options = array(
     'upload_dir' => '../../../../../' . $modelDataPath,
@@ -59,16 +103,25 @@ $options = array(
     'script_url' => get_full_url() . '/?model3d_id=' . intval($_REQUEST['model3d_id']) . '&spec_file_id=' . intval($_REQUEST['spec_file_id'])
 );
 
-if($specFile->multiplicity_max)
-    $options['max_number_of_files'] = $specFile->multiplicity_max;
+if(count($_FILES) && !$file && $specFile->multiplicity_max) {
+    $count = 0;
+    foreach($model3d->files as $file) {
+        if($file->spec_file_id == intval($_REQUEST['spec_file_id']))
+            $count++;
+    }
+    if($count >= $specFile->multiplicity_max)
+        die('{"files":[{"error":"Nombre maximum de fichiers atteint"}]}');
+}
 
 $options['accept_file_types'] = '`(\.|\/)(' . implode('|', explode(',', $specFile->extension)) . ')$`i';
 
 if(array_key_exists('file', $_GET)) {
     $file = File::first(array('conditions' => array('model3d_id = ? AND path = ?', intval($_REQUEST['model3d_id']), $modelDataPath . $_GET['file'])));
     if($_SERVER['REQUEST_METHOD'] == 'DELETE') {
-        if($file)
+        if($file) {
             $file->delete();
+            @unlink($options['upload_dir'] . $_GET['file']);
+        }
         else
             die;
     }

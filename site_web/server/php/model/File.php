@@ -4,7 +4,8 @@ class File extends ActiveRecord\Model
 {
     public static $table_name = 'file';
     static $belongs_to = array(
-        array('model3d')
+        array('model3d'),
+        array('specFile')
     );
 
     public function name() {
@@ -20,7 +21,7 @@ class File extends ActiveRecord\Model
     }
 
     public function deleteUrl() {
-        return 'server/php/libs/UploadHandler/?mid=' . $this->model3d->id . '&file=' . $this->name();
+        return 'server/php/libs/UploadHandler/?model3d_id=' . $this->model3d->id . '&spec_file_id=' . $this->specFile->id . '&file=' . $this->name();
     }
 
     public function deleteType() {
