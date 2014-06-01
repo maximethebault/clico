@@ -10,6 +10,9 @@ var WebsocketConnection = require('./broadcast/WebsocketConnection');
 var wrench = require('./file_utils/wrench.js');
 var sqlCon = global.sqlCon;
 
+// TODO: envoyer un mail si model3d fini
+// TODO: envoyer mail à admin si erreur
+
 /**
  * Un Model3d, un Process ou une Step possède les mêmes contrôles qu'un lecteur de musique :
  * -> un 'play', nommé dans le code start, qui (re)démarre un traitement
