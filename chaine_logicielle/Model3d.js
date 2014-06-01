@@ -166,6 +166,8 @@ var Model3d = inherit({
             return;
         }
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') lancé');
+        // avant de (re)lancer le traitement à proprement parler, on clean les erreurs :
+        self.update({error: ''});
         self.__self.poolModel3d.acquire(function(err, poolIdentifier) {
             self.poolIdentifier = poolIdentifier;
             self.update({
