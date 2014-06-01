@@ -4,7 +4,6 @@ window.cnpao.Model.Process = inherit({
     __constructor: function(attrs, model3d) {
         attrs = attrs || {};
         this._attrs = _.defaults(attrs, this.__self.defaultAttrs);
-        this._model3d = model3d;
     },
     create: function(cb) {
         var self = this;
@@ -93,8 +92,11 @@ window.cnpao.Model.Process = inherit({
             });
             row.steps = null;
         }
-        if(self.tabCachedModels.hasOwnProperty(row.id))
+        if(self.tabCachedModels.hasOwnProperty(row.id)) {
+            if(self.tabCachedModels[row.id]._attrs.state !== row.state)
+                $(document).trigger('ui-update', [row.model3d_id, row.id, null]);
             _.extend(self.tabCachedModels[row.id]._attrs, row);
+        }
         else
             self.tabCachedModels[row.id] = new window.cnpao.Model.Process(row, model3d);
         return self.tabCachedModels[row.id];

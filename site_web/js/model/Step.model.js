@@ -4,7 +4,6 @@ window.cnpao.Model.Step = inherit({
     __constructor: function(attrs, process) {
         attrs = attrs || {};
         this._attrs = _.defaults(attrs, this.__self.defaultAttrs);
-        this._process = process;
     }
 },
 {
@@ -50,8 +49,23 @@ window.cnpao.Model.Step = inherit({
     },
     insert: function(row, process) {
         var self = this;
-        if(self.tabCachedModels.hasOwnProperty(row.id))
+        if(self.tabCachedModels.hasOwnProperty(row.id)) {
+            if(self.tabCachedModels[row.id]._attrs.state !== row.state) {
+                window.cnpao.Model.Process.get(false, {id: row.process_id}, null, function(err, res) {
+                    if(err || !res || !res.length)
+                        return;
+                    $(document).trigger('ui-update', [res[0]._attrs.model3d_id, row.process_id, row.id]);
+                });
+            }
+            if(self.tabCachedModels[row.id]._attrs.progress !== row.progress) {
+                window.cnpao.Model.Process.get(false, {id: row.process_id}, null, function(err, res) {
+                    if(err || !res || !res.length)
+                        return;
+                    $(document).trigger('ui-progress', [res[0]._attrs.model3d_id, row.process_id, row.id, row.progress]);
+                });
+            }
             _.extend(self.tabCachedModels[row.id]._attrs, row);
+        }
         else
             self.tabCachedModels[row.id] = new window.cnpao.Model.Step(row, process);
         return self.tabCachedModels[row.id];

@@ -18,10 +18,8 @@ window.cnpao.SyncSocket = inherit({
         this.socket.onerror = this.onError.bind(this);
         this.socket.onclose = this.onClose.bind(this);
     },
-    refreshModel3d: function(id, cb) {
+    refreshModel3d: function(id) {
         window.cnpao.Model.Model3d.get(true, {id: id}, function(err) {
-            if(!err && cb)
-                cb();
         });
     },
     sendMessage: function(message) {
@@ -45,11 +43,8 @@ window.cnpao.SyncSocket = inherit({
             }
         }
         else {
-            if(data.uiUpdate) {
-                this.throttledRefresh(data.model3d_id, function() {
-                    $(document).trigger('ui-update', [data.model3d_id, data.process_id, data.step_id]);
-                })
-            }
+            if(data.uiUpdate)
+                this.throttledRefresh(data.model3d_id);
             else if(data.progress) {
                 window.cnpao.Model.Step.get(false, {id: data.step_id}, null, function(err, res) {
                     if(!err && res) {

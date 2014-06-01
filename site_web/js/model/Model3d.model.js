@@ -165,8 +165,11 @@ window.cnpao.Model.Model3d = inherit({
             });
             row.params = null;
         }
-        if(self.tabCachedModels.hasOwnProperty(row.id))
+        if(self.tabCachedModels.hasOwnProperty(row.id)) {
+            if(self.tabCachedModels[row.id]._attrs.state !== row.state)
+                $(document).trigger('ui-update', [row.id, null, null]);
             _.extend(self.tabCachedModels[row.id]._attrs, row);
+        }
         else
             self.tabCachedModels[row.id] = new window.cnpao.Model.Model3d(row);
         return self.tabCachedModels[row.id];

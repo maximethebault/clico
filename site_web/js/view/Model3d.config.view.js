@@ -47,10 +47,18 @@ window.cnpao.View.Model3dConfigured = inherit({
     },
     uiProgress: function(e, model3d_id, process_id, step_id, progress) {
         var self = this;
-        if(model3d_id == self.model._attrs.id) {
-            $('.progress-bar-' + step_id, self.$el).prop('aria-valuenow', progress);
-            $('.progress-bar-' + step_id, self.$el).css('width', progress + '%');
-        }
+        window.cnpao.Model.Step.get(false, {id: step_id}, null, function(err, res) {
+            if(res && res.length) {
+                var step = res[0];
+                var progress = step._attrs.progress;
+                if(step._attrs.progress === 0 && step._attrs.state >= window.cnpao.Constants.STATE_RUNNING)
+                    progress = 100;
+                if(model3d_id == self.model._attrs.id) {
+                    $('.progress-bar-' + step_id, self.$el).prop('aria-valuenow', progress);
+                    $('.progress-bar-' + step_id, self.$el).css('width', progress + '%');
+                }
+            }
+        });
     },
     bindEvents: function() {
         $(document).on('ui-update', this.uiUpdate.bind(this));
