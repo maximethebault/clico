@@ -150,12 +150,14 @@ var Model3d = inherit({
             cb();
             return;
         }
+        // si on a fait une demande de suppression du modèle, on annule la mise en route et on supprime !
         if(self._attrs.delete_request) {
             cb();
             self.destroy();
             return;
         }
         self.commandInProgress = true;
+        // si on a reçu un ordre de mise en route alors que le Model3d était dans l'état terminé, on annule la mise en route et on neutralise l'ordre
         if(self._attrs.state == Constants.STATE_STOPPED) {
             self.update({
                 command: Constants.COMMAND_STOP,
@@ -166,10 +168,13 @@ var Model3d = inherit({
             return;
         }
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') lancé');
-        // avant de (re)lancer le traitement à proprement parler, on clean les erreurs :
+        // avant de (re)lancer le traitement à proprement parler, on clean les erreurs
         self.update({error: ''});
+        // on prend notre ticket dans la pool, ce qui sera à limiter le nombre de traitements de Model3d en parallèle
         self.__self.poolModel3d.acquire(function(err, poolIdentifier) {
+            // on sauvegarde notre ticket pour pouvoir le rendre plus tard
             self.poolIdentifier = poolIdentifier;
+            // cette fois-ci, c'est vraiment parti !
             self.update({
                 state: Constants.STATE_RUNNING
             }, function(err) {
@@ -186,15 +191,18 @@ var Model3d = inherit({
      */
     startNextProcess: function(cb) {
         var self = this;
+        // on obtient la liste des Process
         self.process(function(err, processes) {
             if(err) {
                 cb(err);
                 return;
             }
+            // on les trie suivant leurs attributs "ordering"
             processes.sort(function(a, b) {
                 return a._attrs.ordering - b._attrs.ordering;
             });
             self.processCurrent = undefined;
+            // on trouve le premier Process dans un état différent de "STOPPED" et on le démarre !
             for(var i = 0; i < processes.length; i++) {
                 if(processes[i]._attrs.state == Constants.STATE_STOPPED)
                     continue;
@@ -202,6 +210,7 @@ var Model3d = inherit({
                 self.processCurrent.start(cb);
                 break;
             }
+            // si on n'a trouvé aucun Process à démarrer, c'est qu'on a fini
             if(!self.processCurrent) {
                 self.done(function(err) {
                     if(err)
