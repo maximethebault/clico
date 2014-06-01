@@ -12,99 +12,11 @@ require 'server/php/libs/loadActiveRecord.php'
             </div>
             <?php include("navbar.php"); ?>
             <div id="hc_corps">
-                <ul class="nav nav-tabs" id="myTab">
-                    <li class="active"><a href="#nuages" data-toggle="tab">J'ai des nuages de points</a></li>
-                    <li><a href="#photos" data-toggle="tab">J'ai des photos</a></li>
-                </ul>
-
-                <div class="tab-content">
-                    <div class="model3d-selector">
-                        <h3>Partie Visualisation</h3>
-                        <img src="images/progress.png" style="width: 30%; margin: auto; display: block;"/>
-                        <table class="model3d-selector-table model3d-tracker">
-                            <tr>
-                                <td>
-                                    <?php
-                                    $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
-                                    $order = -1;
-                                    foreach($processes as $process) {
-                                        if($order < $process->ordering && $order !== -1) {
-                                            echo '</td><td>';
-                                        }
-                                        echo '<span id="' . $process->id . '" class="process">' . $process->name . '</span>';
-                                        $order = $process->ordering;
-                                    }
-                                    ?>
-                                </td>
-                            </tr>
-                        </table>
-                        <div class="model3d-steps">
-                            <?php
-                            $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
-                            foreach($processes as $process) {
-                                echo '<div class="model3d-step ' . $process->id . '">';
-                                echo '<h1>' . $process->name . '</h1>';
-                                $i = 1;
-                                foreach($process->specStep as $step) {
-                                    echo '<span class="step-name">' . $i . '. ' . $step->name . '</span>';
-                                    ?>
-                                    <div class="progress progress-striped active">
-                                        <div class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 45%">
-                                        </div>
-                                    </div>
-                                    <?php
-                                    $i++;
-                                }
-                                echo '</div>';
-                            }
-                            ?>
-                        </div>
-
-                        <h3>Partie Formulaire</h3>
-                        <form>
-                            <table class="model3d-selector-table model3d-form">
-                                <tr>
-                                    <td>
-                                        <?php
-                                        $processes = SpecProcess::find('all', array('order' => 'ordering ASC'));
-                                        $order = -1;
-                                        foreach($processes as $process) {
-                                            if($order < $process->ordering && $order !== -1) {
-                                                echo '</td><td>';
-                                            }
-                                            echo '<span id="' . $process->id . '" class="process">' . $process->name . '</span>';
-                                            $order = $process->ordering;
-                                        }
-                                        ?>
-                                    </td>
-                                </tr>
-                            </table>
-                        </form>
-                    </div>
-                    <div class="tab-pane active" id="nuages">
-                        <br />
-                        <div style="width: 40%; min-height: 100px;">
-                            <div class="input-group">
-
-                                <span class="input-group-btn">
-                                    <span class="btn btn-primary btn-file">
-                                        Browse...
-                                        <input type="file" multiple>
-                                    </span>
-                                </span>
-                                <input type="text" class="form-control" readonly="">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="tab-pane" id="photos">
-                        <button type="button" class="btn btn-info add-model3d">
-                            <i class="glyphicon glyphicon-cloud-upload"></i>
-                            <span>Ajouter un nouveau modèle 3D</span>
-                        </button>
-                        <div id="photos_in">
-
-                        </div>
-                    </div>
+                <button type="button" class="btn btn-info btn-add-model3d">
+                    <i class="glyphicon glyphicon-cloud-upload"></i>
+                    <span>Ajouter un nouveau modèle 3D</span>
+                </button>
+                <div id="model3d-list">
                 </div>
             </div>
         </div>
@@ -112,6 +24,14 @@ require 'server/php/libs/loadActiveRecord.php'
 
 
 
+        <!-- Le template pour le formulaire d'ajout de nouveaux modèles 3d -->
+        <script id="template-model3d-form" type="text/x-tmpl">
+<?php include('form-template.php'); ?>
+        </script>
+        <!-- Le template pour le suivi de progression des modèles 3d -->
+        <script id="template-model3d-progress" type="text/x-tmpl">
+<?php include('progress-template.php'); ?>
+        </script>
         <!-- The template to display files available for upload -->
         <script id="template-upload" type="text/x-tmpl">
             {% for (var i=0, file; file=o.files[i]; i++) { %}
@@ -263,6 +183,7 @@ require 'server/php/libs/loadActiveRecord.php'
         </script>
 
         <script src="js/underscore.js"></script>
+        <script src="js/jquery.cookie.js"></script>
         <script src="FileUpload/js/vendor/jquery.ui.widget.js"></script>
         <!-- The Templates plugin is included to render the upload/download listings -->
         <script src="FileUpload/js/tmpl.min.js"></script>
@@ -291,48 +212,101 @@ require 'server/php/libs/loadActiveRecord.php'
 
         <script>
             window.user_id = <?php echo intval($_SESSION['id']); ?>;
+            window.specProcesses = {};
+            window.specFiles = {};
+<?php
+$specProcesses = SpecProcess::find('all');
+foreach($specProcesses as $specProcess) {
+    echo 'window.specProcesses[' . $specProcess->id . '] = ' . $specProcess->to_json(array('only' => array('id', 'name', 'ordering'), 'include' => array('specFileInput', 'specFileOutput'))) . ';';
+}
+$specFiles = SpecFile::find('all');
+foreach($specFiles as $specFile) {
+    echo 'window.specFiles[' . $specFile->id . '] = ' . $specFile->to_json() . ';';
+}
+?>
         </script>
 
         <script src="js/inherit.js"></script>
-        <script src="js/node.js"></script>
-        <script src="js/Socket.js"></script>
-        <script src="js/ProgressManager.js"></script>
+        <script src="js/Constants.js"></script>
+        <script src="js/sync/SyncSocket.js"></script>
+        <script src="js/sync/SyncSql.js"></script>
         <script src="js/model/Model3d.model.js"></script>
         <script src="js/model/Process.model.js"></script>
-        <script src="js/model/SFM.model.js"></script>
         <script src="js/model/Param.model.js"></script>
+        <script src="js/model/Step.model.js"></script>
         <script src="js/view/Params.view.js"></script>
+        <script src="js/view/Model3d.unconfig.view.js"></script>
+        <script src="js/view/Model3d.config.view.js"></script>
         <script src="js/view/Model3d.view.js"></script>
 
         <script>
-            $(document).on('change', '.btn-file :file', function() {
-                var input = $(this);
-                var numFiles = input.get(0).files ? input.get(0).files.length : 1;
-                var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
-                input.trigger('fileselect', [numFiles, label]);
-            });
-
             $(document).ready(function() {
-                $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
-                    console.log(numFiles);
-                    console.log(label);
+                $(document).on('change', '.btn-file :file', function() {
+                    var input = $(this);
+                    var numFiles = input.get(0).files ? input.get(0).files.length : 1;
+                    var label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+                    input.trigger('fileselect', [numFiles, label]);
                 });
-                window.cnpao.View.Model3d.loadView();
-            });
-        </script>
+                $(document).on('click', '.model3d-form-selector span.process', function() {
+                    var hasClass = false;
+                    if($(this).hasClass("process-selected"))
+                        hasClass = true;
+                    // on déselectionne tous les éléments de la cellule
+                    $(this).parent().children('span.process').each(function() {
+                        if($(this).hasClass("process-selected")) {
+                            $(document).trigger('process-hide', [$(this).data('process-id'), $(this).data('model3d-id')]);
+                            $(this).removeClass("process-selected");
+                        }
+                    });
+                    // on (dé)sélectionne celui sur lequel on vient de cliquer
+                    if(!hasClass) {
+                        $(document).trigger('process-show', [$(this).data('process-id'), $(this).data('model3d-id')]);
+                        $(this).addClass("process-selected");
+                    }
+                });
+                $(document).on('change', '.model3d-form-param-value', function() {
+                    $(document).trigger('param-change', [$(this).val(), $(this).data('param-id'), $(this).data('model3d-id')]);
+                });
+                $(document).on('process-hide', function(ev, specProcessId, model3dId) {
+                    $('.model3d-form-param-button-' + specProcessId + '-' + model3dId).parent().addClass('hidden');
+                    $('.model3d-form-param-tab-' + specProcessId + '-' + model3dId).addClass('hidden');
+                    // si tous les onglets sont cachés, on affiche un message spécial :
+                    var toHide = true;
+                    $('.model3d-form-param-button-' + model3dId + ' li').each(function() {
+                        if(!$(this).hasClass('hidden')) {
+                            toHide = false;
+                            return false;
+                        }
+                    });
+                    if(toHide) {
+                        $('.model3d-form-params-panel-' + model3dId).addClass('hidden');
+                        $('.model3d-form-params-message-' + model3dId).removeClass('hidden');
+                    }
+                });
+                $(document).on('process-show', function(ev, specProcessId, model3dId) {
+                    $('.model3d-form-param-button-' + specProcessId + '-' + model3dId).parent().removeClass('hidden');
+                    $('.model3d-form-param-tab-' + specProcessId + '-' + model3dId).removeClass('hidden');
+                    // si tous les onglets sont cachés, on affiche un message spécial :
+                    var toShow = false;
+                    $('.model3d-form-param-button-' + model3dId + ' li').each(function() {
+                        if(!$(this).hasClass('hidden')) {
+                            toShow = true;
+                            return false;
+                        }
+                    });
+                    if(toShow) {
+                        $('.model3d-form-params-panel-' + model3dId).removeClass('hidden');
+                        $('.model3d-form-params-message-' + model3dId).addClass('hidden');
+                    }
+                });
 
-        <script>
-            $(".model3d-form span.process").click(function() {
-                var hasClass = false;
-                if($(this).hasClass("process-selected"))
-                    hasClass = true;
-                // on déselectionne tous les éléments de la cellule
-                $(this).parent().children('span.process').each(function() {
-                    $(this).removeClass("process-selected");
-                });
-                // on (dé)sélectionne celui sur lequel on vient de cliquer
-                if(!hasClass)
-                    $(this).addClass("process-selected");
+                window.cnpao.View.Model3d.loadView();
+
+                // fallback sur la synchro SQL si le Websocket ne fonctionne pas
+                var syncSocket = new window.cnpao.SyncSocket();
+                syncSocket.onClose = function() {
+                    new window.cnpao.SyncSql();
+                };
             });
         </script>
     </body>
