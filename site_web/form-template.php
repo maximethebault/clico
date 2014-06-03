@@ -44,7 +44,7 @@
                         echo '<div class="tab-pane{% if(!o.processSelected[' . $process->id . ']) { %} hidden{% } %} fade model3d-form-param-tab-' . $process->id . '-{%=o.id%}">';
                         foreach($params as $param) {
                             echo '<h4>' . $param->name . '</h4><br /><br />';
-                            echo '<div data-default="' . $param->value_default . '" data-min="' . $param->value_min . '" data-max="' . $param->value_max . '" data-step="' . $param->value_step . '" data-acc="' . $param->value_acc . '" class="model3d-slide-{%=o.id%} model3d-form-param-value model3d-form-param-' . $process->id . '-value"></div>';
+                            echo '<div data-spec-id="' . $param->id . '" data-default="' . $param->value_default . '" data-min="' . $param->value_min . '" data-max="' . $param->value_max . '" data-step="' . $param->value_step . '" data-acc="' . $param->value_acc . '" class="model3d-slide-{%=o.id%} model3d-form-param-value model3d-form-param-' . $process->id . '-value"></div>';
                             //echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" value="{% if(o.paramSelected[' . $param->id . ']) { %}{%=o.paramValue[' . $param->id . ']%}{% } else { %}' . $param->value_default . '{% } %}" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br /><br />';
                         }
                         echo '</div>';
