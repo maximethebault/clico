@@ -43,7 +43,7 @@ var StepTexturing = inherit(Step, {
                 self.outputFilePng = Utils.getReducedPath(self.meshPath) + '.textured.obj.png';
                 self.outputFileMtl = Utils.getReducedPath(self.meshPath) + '.textured.mtl';
 
-                self._process._model3d.param({code: 'texturingBorder'}, function(err, param) {
+                self._process._model3d.param({code: ['texturingBorder', 'texturingResolution']}, function(err, param) {
                     if(err) {
                         self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : erreur lors de la récupération des paramètres : ' + err + '.');
                         // on ne va pas plus loin
@@ -56,6 +56,7 @@ var StepTexturing = inherit(Step, {
                     }
 
                     self.texturingBorder = param.texturingBorder._attrs.id ? param.texturingBorder._attrs.value : param.texturingBorder._attrs.value_default;
+                    self.texturingResolution = param.texturingResolution._attrs.id ? param.texturingResolution._attrs.value : param.texturingResolution._attrs.value_default;
                     self.stopYaLoop = false;
                     self.startNewBorder();
                 });
@@ -71,7 +72,7 @@ var StepTexturing = inherit(Step, {
         if(self.stopYaLoop)
             return;
         self.processHasFailed = false;
-        self.process = spawn('MeshTexturer', ['-ccloud', path.basename(self.pointCloudPath), '-mesh', path.basename(self.meshPath), '-tmesh', path.basename(self.outputFileObj), '-width', '4096', '-height', '4096', '-k', '5', '-border', self.texturingBorder, '-v'], {cwd: path.dirname(self.outputFileObj)});
+        self.process = spawn('MeshTexturer', ['-ccloud', path.basename(self.pointCloudPath), '-mesh', path.basename(self.meshPath), '-tmesh', path.basename(self.outputFileObj), '-width', self.texturingResolution, '-height', self.texturingResolution, '-k', '5', '-border', self.texturingBorder, '-v'], {cwd: path.dirname(self.outputFileObj)});
         self.process.on('error', self.error.bind(self));
         self.process.stdout.setEncoding('utf-8');
         self.process.stderr.setEncoding('utf-8');
