@@ -238,6 +238,7 @@ foreach($specFiles as $specFile) {
         <script src="js/view/Model3d.unconfig.view.js"></script>
         <script src="js/view/Model3d.config.view.js"></script>
         <script src="js/view/Model3d.view.js"></script>
+        <script src="nouislider/jquery.nouislider.min.js"></script>
 
         <script>
             $(document).ready(function() {

@@ -43,11 +43,9 @@
                     if(count($params)) {
                         echo '<div class="tab-pane{% if(!o.processSelected[' . $process->id . ']) { %} hidden{% } %} fade model3d-form-param-tab-' . $process->id . '-{%=o.id%}">';
                         foreach($params as $param) {
-                            echo '<h4>' . $param->name . '</h4>';
-                            echo '<span>Min : ' . $param->value_min . '</span><br />';
-                            echo '<span>Max : ' . $param->value_max . '</span><br />';
-                            echo '<span>Précision (= sensibilité du slider : si 0, passe d\'unité en unité, si 1, passe de x.1->x.2->x.3->etc.) : ' . $param->value_acc . '</span><br />';
-                            echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" value="{% if(o.paramSelected[' . $param->id . ']) { %}{%=o.paramValue[' . $param->id . ']%}{% } else { %}' . $param->value_default . '{% } %}" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br /><br />';
+                            echo '<h4>' . $param->name . '</h4><br /><br />';
+                            echo '<div data-default="' . $param->value_default . '" data-min="' . $param->value_min . '" data-max="' . $param->value_max . '" data-step="' . $param->value_step . '" data-acc="' . $param->value_acc . '" class="model3d-slide-{%=o.id%} model3d-form-param-value model3d-form-param-' . $process->id . '-value"></div>';
+                            //echo '<input type="number" class="model3d-form-param-value model3d-form-param-' . $process->id . '-value" value="{% if(o.paramSelected[' . $param->id . ']) { %}{%=o.paramValue[' . $param->id . ']%}{% } else { %}' . $param->value_default . '{% } %}" data-model3d-id="{%=o.id%}" data-param-id="' . $param->id . '"><br /><br />';
                         }
                         echo '</div>';
                     }
