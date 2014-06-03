@@ -33,6 +33,8 @@ window.cnpao.View.Model3dConfigured = inherit({
                     templateData.step[step._attrs.spec_step_id] = step._attrs;
                     if(templateData.step[step._attrs.spec_step_id].progress === 0 && templateData.step[step._attrs.spec_step_id].state >= window.cnpao.Constants.STATE_RUNNING)
                         templateData.step[step._attrs.spec_step_id].progress = 100;
+                    else if(templateData.step[step._attrs.spec_step_id].state === window.cnpao.Constants.STATE_STOPPED)
+                        templateData.step[step._attrs.spec_step_id].progress = 100;
                 });
                 if(self.$el)
                     self.$el.replaceWith(tmpl("template-model3d-progress", templateData));

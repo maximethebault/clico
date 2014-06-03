@@ -14,6 +14,10 @@ var Step = inherit({
         this._attrs = attrs;
         this._process = process;
         this._running = false;
+        // le timeout déclenché si la Step ne se finit pas assez vite (à utiliser si logiciel(s) de la Step sont instables)
+        this._timeoutRun = null;
+        // le timeout déclenché si la demande de mise en pause non forcée n'a pas été satisfaite assez vite (à utiliser si logiciel(s) de la Step sont instables)
+        this._timeoutPause = null;
         // quand ce champ passe à vrai, on ignore toutes les erreurs qui peuvent arriver (on a sans doute forcer la fermeture d'un child_process)
         this._ignoreError = false;
         // si l'utilisateur a demandé une pause/un stop, on va enregistrer le callback pour pouvoir l'appeler lorsque "done" est appelée
@@ -67,6 +71,12 @@ var Step = inherit({
         var self = this;
         if(!self._running) {
             self._running = true;
+            if(self._timeoutRun)
+                clearTimeout(self._timeoutRun);
+            if(self._attrs.timeout_run)
+                self._timeoutRun = setTimeout(function() {
+                    self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : temps maximal d\'exécution dépassé');
+                }, self._attrs.timeout_run);
             self._ignoreError = false;
             self._pendingCallback = null;
             self._order = null;
@@ -91,8 +101,15 @@ var Step = inherit({
         }
         self._order = Constants.COMMAND_PAUSE;
         self._pendingCallback = cb;
+        if(self._timeoutRun)
+            clearTimeout(self._timeoutRun);
         if(hurry)
             self._ignoreError = true;
+        else if(self._attrs.timeout_pause)
+            self._timeoutPause = setTimeout(function() {
+                self.error('[Step] Etape "' + self._attrs.name + '" (ID = ' + self._attrs.id + ') : temps maximal de mise en pause dépassé');
+                self.kill();
+            }, self._attrs.timeout_pause);
     },
     /*
      *
@@ -106,6 +123,8 @@ var Step = inherit({
             cb();
             return;
         }
+        if(self._timeoutRun)
+            clearTimeout(self._timeoutRun);
         self._order = Constants.COMMAND_STOP;
         self._ignoreError = true;
         self._pendingCallback = cb;
@@ -126,6 +145,10 @@ var Step = inherit({
     },
     done: function(cb) {
         var self = this;
+        if(self._timeoutRun)
+            clearTimeout(self._timeoutRun);
+        if(self._timeoutPause)
+            clearTimeout(self._timeoutPause);
         if(!self._running) {
             cb();
             if(self._pendingCallback) {
@@ -237,7 +260,7 @@ var Step = inherit({
     get: function(cond, process, cb) {
         var self = this;
         var queryArgs = Utils.getQueryArgs(cond);
-        sqlCon.query('SELECT s.*, ss.name, ss.library_name, ss.ordering FROM step s INNER JOIN spec_step ss ON s.spec_step_id=ss.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
+        sqlCon.query('SELECT s.*, ss.name, ss.library_name, ss.ordering, ss.timeout_run, ss.timeout_pause FROM step s INNER JOIN spec_step ss ON s.spec_step_id=ss.id WHERE ' + queryArgs.where, queryArgs.args, function(err, rows) {
             if(err) {
                 var message = '[Step] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);

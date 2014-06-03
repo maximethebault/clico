@@ -31,7 +31,7 @@
                 foreach($process->specStep as $step) {
                     echo '<span class="step-name">' . $i . '. ' . $step->name . '</span>';
                     ?>
-                    <div class="progress progress-striped{% if(o.step[<?php echo $step->id; ?>] && o.step[<?php echo $step->id; ?>].state === 1) { %} active{% } %}">
+                    <div class="progress{% if(o.step[<?php echo $step->id; ?>] && o.step[<?php echo $step->id; ?>].state === 1) { %} progress-striped active{% } %}">
                         <div class="progress-bar progress-bar-{% if(o.step[<?php echo $step->id; ?>]) { %}{%=o.step[<?php echo $step->id; ?>].id%}{% } %}" role="progressbar" aria-valuenow="{% if(o.step[<?php echo $step->id; ?>]) { %}{%=o.step[<?php echo $step->id; ?>].progress%}{% } %}" aria-valuemin="0" aria-valuemax="100" style="width: {% if(o.step[<?php echo $step->id; ?>]) { %}{%=o.step[<?php echo $step->id; ?>].progress%}{% } %}%">
                         </div>
                     </div>
