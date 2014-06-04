@@ -32,7 +32,6 @@ var StepNormalCalculation = inherit(Step, {
         }
     },
     processMeshlab: function(data) {
-        console.log(data);
         // il est possible que la progression marche mal pas pour Meshlab
         // fonctionnera quand ce patch sera appliqué : https://sourceforge.net/p/meshlab/bugs/393/ (il faudra peut-être rajouter un readline ici)
         // Résumé du bug : les données sur stdout sont bufferisées, elles arrivent donc tout en bloc quand le buffer est plein ou tout à la fin du processus.

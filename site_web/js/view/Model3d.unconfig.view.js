@@ -4,6 +4,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
     __constructor: function(model) {
         var self = this;
         self.model = model;
+        self.debouncedChange = _.debounce(self.paramChange.bind(self), 1000);
         var templateData = {
             id: model._attrs.id,
             processSelected: {},
@@ -24,6 +25,31 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                 $('#model3d-list').prepend(tmpl("template-model3d-form", templateData));
                 self.hideAndSeekFiles();
                 self.$el = $('.model3d-form-' + model._attrs.id);
+                $('.model3d-form-param-value', self.$el).each(function() {
+                    $(this).noUiSlider({
+                        start: $(this).data('default'),
+                        step: $(this).data('step'),
+                        range: {
+                            'min': $(this).data('min'),
+                            'max': $(this).data('max')
+                        },
+                        serialization: {
+                            lower: [$.Link({
+                                    target: '-tooltip-<div class="tooltip-slider"></div>',
+                                    method: function(value) {
+                                        // The tooltip HTML is 'this', so additional
+                                        // markup can be inserted here.
+                                        $(this).html('<span>' + value + '</span>');
+                                    },
+                                    format: {
+                                        decimals: $(this).data('acc'),
+                                        mark: ',',
+                                        thousand: ' '
+                                    }
+                                })]
+                        }
+                    });
+                });
                 self.bindEvents();
                 $('.model3d-form-file-tab-' + self.model._attrs.id + '>div').each(function() {
                     var maxFile = $(this).data('max-file');
@@ -103,11 +129,10 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                 $('.sampling-warning', this.$el).removeClass('hidden');
         });
     },
-    paramChange: function(ev, newValue, specParamId, model3dId) {
+    paramChange: function(ev, newValue) {
         var self = this;
-        if(model3dId !== self.model._attrs.id)
-            return;
-        window.cnpao.Model.Param.get(false, {model3d_id: model3dId, spec_param_id: specParamId}, self.model, function(err, res) {
+        var specParamId = $(ev.target).data('spec-id');
+        window.cnpao.Model.Param.get(false, {model3d_id: self.model._attrs.id, spec_param_id: specParamId}, self.model, function(err, res) {
             // TODO: si l'utilisateur change très vite la valeur, le Param pourrait ne pas encore être dans le tableau stockant les Params
             // autre problème : beaucoup d'update : certaines se réalisent avant d'autres => à la fin, mauvaise valeur
             if(res[0]) {
@@ -116,7 +141,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                 });
             }
             else {
-                var param = new window.cnpao.Model.Param({model3d_id: model3dId, spec_param_id: specParamId, value: newValue}, self.model);
+                var param = new window.cnpao.Model.Param({model3d_id: self.model._attrs.id, spec_param_id: specParamId, value: newValue}, self.model);
                 param.create();
             }
         });
@@ -147,14 +172,14 @@ window.cnpao.View.Model3dUnconfigured = inherit({
     bindEvents: function() {
         $(document).on('process-hide', this.processHide.bind(this));
         $(document).on('process-show', this.processShow.bind(this));
-        $(document).on('param-change', this.paramChange.bind(this));
+        $(document).on('slide', '.model3d-slide-' + this.model._attrs.id, this.debouncedChange.bind(this));
         $('.model3d-config-modal-btn', this.$el).on('click', this.validate.bind(this));
         $(document).on('click', '.model3d-delete-' + this.model._attrs.id, this.deleteModel.bind(this));
     },
     unbindEvents: function() {
         $(document).off('process-hide', this.processHide.bind(this));
         $(document).off('process-show', this.processShow.bind(this));
-        $(document).off('param-change', this.paramChange.bind(this));
+        $(document).off('slide', '.model3d-slide-' + this.model._attrs.id, this.debouncedChange.bind(this));
         $('.model3d-config-modal-btn', this.$el).off('click', this.validate.bind(this));
         $(document).off('click', '.model3d-delete-' + this.model._attrs.id, this.deleteModel.bind(this));
     },
