@@ -253,3 +253,22 @@ div.hr {
 	margin: auto;
 	width: 95%;
 }
+
+.lien-logiciel {
+	display: inline-block;
+	background-color: #202635;
+	width: 150px;
+	height: 30px;
+	text-align: center;
+	color: #fff;
+	font-size: 18px;
+	line-height: 30px;
+	border-radius: 5px;
+	font-family: 'Lato', sans-serif;
+	margin: 3px;
+}
+
+.lien-logiciel:hover{
+	color: #006bff;
+	text-decoration: none;
+}

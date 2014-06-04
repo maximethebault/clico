@@ -29,6 +29,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                     $(this).noUiSlider({
                         start: $(this).data('default'),
                         step: $(this).data('step'),
+                        connect: 'lower',
                         range: {
                             'min': $(this).data('min'),
                             'max': $(this).data('max')
