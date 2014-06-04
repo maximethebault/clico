@@ -11,10 +11,10 @@ session_start();
             </div>
             <?php include("navbar.php"); ?>
             <div id="hc_corps">
-                <h3 style="margin-bottom: 60px;"><img src="images/clico.png" /><br />du vestige archéologique au modèle 3D</h3>
-
+                <h3 style="margin-bottom: 60px; font-size: 18px; color: #ff6200;"><img src="images/clico.png" /><br />du vestige archéologique au modèle 3D</h3>
+				
                 <div class="div-presentation">
-
+                    
                     <div class="presentation" style="width: 100%;">
                         <h4>La génération d'un modèle 3D n'a jamais été aussi simple</h4>
                         <br />
