@@ -16,7 +16,7 @@ session_start();
                 <div class="div-presentation">
                     
                     <div class="presentation" style="width: 100%;">
-                        <h4>La génération d'un modèle 3D n'a jamais été aussi simple</h4>
+                        <h4>La génération d'un modèle 3D n'a jamais été aussi simple !</h4>
                         <br />
                         <p>Avec cliCo, <b>chargez</b> vos photographies ou vos nuages de points, <b>paramétrez</b> en ligne les étapes de votre chaîne, <b>visualisez</b> en temps réel l'avancement du processus puis <b>téléchargez</b> votre modèle 3D !</p>
                         <p><center><i>"Au travers d'une interface simple et ergonomique, nous facilitons au maximum la numérisation de vos données archéologiques."</i></center></p>
@@ -42,7 +42,7 @@ session_start();
                         <br />
                         <h4>Logiciels performants, libres ou gratuits</h4>
                         <br />
-                        <p>Nous avons testé et sélectionné les meilleurs outils permettant de générer un modèle 3D.<br /></p>
+                        <p>Nous avons testé et sélectionné les meilleures application permettant de générer un modèle 3D. Cette variété logicielle vous permet une importante modularité et couvre de nombreux processus, de la reconstruction dense au plaquage de textures.<br /></p>
                     </div>
 
                     <div class="hr">
@@ -51,7 +51,7 @@ session_start();
                     <div class="presentation presentation-left"  style="width: 45%;">
                         <h4>Suivi en temps réel</h4>
                         <br />
-                        <p>Grâce à l'utilisation de Node.JS, un langage de programmation orientée événements, vous aurez un suivi sur la progression en temps réel !</p>
+                        <p>Grâce à l'utilisation de Node.JS, un puissant outil de programmation orienté événements, nous vous garantissons un suivi de la progression en temps réel !</p>
                     </div>
 
                     <div class="presentation presentation-right" style="width: 55%; text-align: center;">
