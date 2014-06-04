@@ -30,13 +30,12 @@ session_start();
                     </div>
 
                     <div class="presentation presentation-left"  style="width: 33%; text-align: center;">
-                        <a href="#" class="lien-logiciel">Visual SFM</a>
-                        <a href="#" class="lien-logiciel">CloudCompare</a>
-                        <a href="#" class="lien-logiciel">PoissonRecon</a>
-                        <a href="#" class="lien-logiciel">MeshLab</a>
-                        <a href="#" class="lien-logiciel">Texturer</a>
-                        <a href="#" class="lien-logiciel">CMVS</a>
-                        <a href="#" class="lien-logiciel">PMVS</a>
+                        <a href="http://ccwu.me/vsfm/" class="lien-logiciel">Visual SFM</a>
+                        <a href="http://www.danielgm.net/cc/" class="lien-logiciel">CloudCompare</a>
+                        <a href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5.71/" class="lien-logiciel">PoissonRecon</a>
+                        <a href="http://meshlab.sourceforge.net" class="lien-logiciel">MeshLab</a>
+                        <a href="mailto:quentin.petit@insa-rennes.fr" class="lien-logiciel">Texturer</a>
+                        <a href="http://www.di.ens.fr/cmvs/" class="lien-logiciel">CMVS/PMVS</a>
                     </div>
 
                     <div class="presentation presentation-left"  style="width: 60%;">
