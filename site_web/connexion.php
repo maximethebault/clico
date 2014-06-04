@@ -9,7 +9,7 @@ if(isset($_POST['email']) AND isset($_POST['password'])) {
     $connexion = $bdd->prepare('SELECT id, password FROM user WHERE email = :email AND password = :password');
     $connexion->execute(array(
                 'email' => $email,
-                'password' => $password)) or die(print_r($req->errorInfo()));
+                'password' => $password));
 
     $resultat = $connexion->fetch();
 
