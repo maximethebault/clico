@@ -25,6 +25,7 @@ window.cnpao.View.Model3dUnconfigured = inherit({
                 $('#model3d-list').prepend(tmpl("template-model3d-form", templateData));
                 self.hideAndSeekFiles();
                 self.$el = $('.model3d-form-' + model._attrs.id);
+                $('.model3d-process', self.$el).tooltip();
                 $('.model3d-form-param-value', self.$el).each(function() {
                     $(this).noUiSlider({
                         start: $(this).data('default'),
