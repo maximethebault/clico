@@ -12,9 +12,9 @@ session_start();
             <?php include("navbar.php"); ?>
             <div id="hc_corps">
                 <h3 style="margin-bottom: 60px; font-size: 18px; color: #ff6200;"><img src="images/clico.png" /><br />du vestige archéologique au modèle 3D</h3>
-				
+
                 <div class="div-presentation">
-                    
+
                     <div class="presentation" style="width: 100%;">
                         <h4>La génération d'un modèle 3D n'a jamais été aussi simple !</h4>
                         <br />
@@ -60,27 +60,27 @@ session_start();
 
                     <div class="hr">
                     </div>
-                    
+
                     <div class="presentation presentation-left" style="width: 50%; text-align: center;">
-                    	<br />
-                    	<img src="images/mail.png"/>
+                        <br />
+                        <img src="images/mail.png"/>
                     </div>
-                    
+
                     <div class="presentation presentation-right" style="width:50%;">
-                    	<h4>Notification par mail</h4>
-                    	<br />
-                    	<p>N'attendez plus devant votre ordinateur pour savoir quand se terminera votre numérisation : cliCo vous envoie un mail une fois le processus terminé.</p>
+                        <h4>Notification par mail</h4>
+                        <br />
+                        <p>N'attendez plus devant votre ordinateur pour savoir quand se terminera votre numérisation : cliCo vous envoie un mail une fois le processus terminé.</p>
                     </div>
-                    
+
                     <div class="hr">
                     </div>
-                    
+
                     <div class="presentation">
-						<p>Pour de plus amples informations, nous vous invitons à consulter :</p>
-						<ul>
-							<li><a href="https://github.com/maximethebault/clico" title="Répertoire Github">Le répertoire Github</a></li>
-							<li><a href="DocUser.pdf" title="Documentation utilisateur">La documentation utilisateur</a></li>
-						</ul>
+                        <p>Pour de plus amples informations, nous vous invitons à consulter :</p>
+                        <ul>
+                            <li><a href="https://github.com/maximethebault/clico" title="Répertoire Github" class="lien">Le répertoire Github</a></li>
+                            <li><a href="DocUser.pdf" title="Documentation utilisateur" class="lien">La documentation utilisateur</a></li>
+                        </ul>
                     </div>
                 </div>
             </div>
