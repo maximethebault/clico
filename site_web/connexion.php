@@ -53,7 +53,7 @@ if(isset($_POST['email']) AND isset($_POST['password'])) {
                         }
                     }
                     ?>
-                    <div style="text-align:center; font-size: 15px; margin-top: 5px;">Formulaire de connexion</div>
+                    <h3>Connexion</h3>
                     <form action="connexion.php" method="post">
                         <div class="form-group" style="width: 80%; margin:auto; margin-top: 15px; margin-bottom: 20px;">
                             <div class="input-group">
@@ -66,8 +66,8 @@ if(isset($_POST['email']) AND isset($_POST['password'])) {
                                 <input type="password" class="form-control" name="password" placeholder="Mot de passe">
                             </div>
                             <br />
-                            <div style="width: 100px; margin: auto;">
-                                <button type="submit" class="btn btn-default">Se connecter</button>
+                            <div style="text-align: center;">
+                                <button type="submit" class="btn btn-primary">Se connecter</button>
                             </div>
                         </div>
                     </form>

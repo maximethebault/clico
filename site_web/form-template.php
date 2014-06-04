@@ -1,8 +1,7 @@
-<div class="model3d-form-{%=o.id%}" style="position: relative; border: #aaaaaa solid 1px; border-radius: 20px; margin: 20px; padding: 20px;">
-    <button type="button" class="btn btn-danger model3d-delete-{%=o.id%}">
-        <i class="glyphicon glyphicon-trash"></i>
-        <span>Supprimer ce modèle 3D</span>
-    </button>
+<div class="model3d-form-{%=o.id%} hc-model3d-form" style="position: relative; border: #aaaaaa solid 1px; border-radius: 20px; margin: 20px; padding: 20px;">
+    <span class="hc-btn-delte model3d-delete-{%=o.id%}">
+    	<img src="images/delete.png" alt="delete" title="delete"/>
+    </span>
     <div>
         <h3>1. Sélection des étapes</h3>
         <table class="model3d-selector-table model3d-form-selector">
@@ -146,9 +145,11 @@
     </div>
     <br /><br />
     <div class="model3d-validation-error hidden" style="position: absolute; margin-top: 7px;"><span class="label label-danger">Erreur</span> <span class="model3d-validation-error-message">Fichier non fourni.</span></div>
-    <button type="button" class="btn btn-success btn-model3d-generate" style="position: absolute; right: 10px;" data-toggle="modal" data-target=".model3d-config-modal-{%=o.id%}">
-        <i class="glyphicon glyphicon-cloud-upload"></i>
-        <span>Générer modèle 3D</span>
-    </button>
+    <div style="text-align: center;">
+	    <button type="button" class="btn btn-success btn-model3d-generate" data-toggle="modal" data-target=".model3d-config-modal-{%=o.id%}">
+	        <i class="glyphicon glyphicon-cloud-upload"></i>
+	        <span>Générer modèle 3D</span>
+	    </button>
+    </div>
     <br />
 </div>

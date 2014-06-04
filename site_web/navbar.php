@@ -53,7 +53,7 @@ function affiche_menu_droite() {
 ?>
 
 
-<nav class="navbar navbar-default" role="navigation">
+<nav class="navbar navbar-default hc-navbar" role="navigation">
     <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
 

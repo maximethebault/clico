@@ -113,7 +113,7 @@ if(isset($_POST['name']) || isset($_POST['surname']) || isset($_POST['email']) |
                         }
                     }
                     ?>
-                    <div style="text-align:center; font-size: 15px; margin-top: 5px;">Formulaire d'inscription</div>
+                   <h3>Inscription</h3>
                     <form action="inscription.php" method="post">
                         <div class="form-group" style="width: 80%; margin:auto; margin-top: 15px; margin-bottom: 20px;">
                             <div class="input-group">
@@ -136,8 +136,8 @@ if(isset($_POST['name']) || isset($_POST['surname']) || isset($_POST['email']) |
                                 <input type="password" class="form-control" name="password" placeholder="Mot de passe">
                             </div>
                             <br />
-                            <div style="width: 100px; margin: auto;">
-                                <button type="submit" class="btn btn-default">S'inscrire</button>
+                            <div style="text-align: center;">
+                                <button type="submit" class="btn btn-primary">S'inscrire</button>
                             </div>
                         </div>
                     </form>

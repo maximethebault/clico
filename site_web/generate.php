@@ -12,7 +12,7 @@ require 'server/php/libs/loadActiveRecord.php'
             </div>
             <?php include("navbar.php"); ?>
             <div id="hc_corps">
-                <button type="button" class="btn btn-info btn-add-model3d">
+                <button type="button" class="btn btn-primary btn-add-model3d">
                     <i class="glyphicon glyphicon-cloud-upload"></i>
                     <span>Ajouter un nouveau modèle 3D</span>
                 </button>

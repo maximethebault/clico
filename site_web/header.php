@@ -8,4 +8,5 @@
     <link rel="stylesheet" href="FileUpload/css/jquery.fileupload.css" type="text/css">
     <link rel="stylesheet" href="FileUpload/css/jquery.fileupload-ui.css" type="text/css">
     <link rel="stylesheet" href="nouislider/jquery.nouislider.css" type="text/css">
+    <link href='http://fonts.googleapis.com/css?family=Lato:300' rel='stylesheet' type='text/css'>
 </head>
