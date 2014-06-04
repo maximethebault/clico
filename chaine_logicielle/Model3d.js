@@ -1,5 +1,6 @@
 var inherit = require('inherit');
 var _ = require('underscore');
+var User = require('./User');
 var File = require('./File');
 var Param = require('./Param');
 var Process = require('./Process');
@@ -89,6 +90,14 @@ var Model3d = inherit({
             else
                 resetTimer();
         });
+    },
+    user: function(options, cb) {
+        if(_.isFunction(options)) {
+            cb = options;
+            options = {};
+        }
+        _.extend(options, {id: this._attrs.user_id});
+        User.get(options, cb);
     },
     createFile: function(options, cb) {
         if(_.isFunction(options)) {
@@ -311,11 +320,23 @@ var Model3d = inherit({
      */
     error: function(err) {
         this.update({error: err, command: Constants.COMMAND_PAUSE});
-        if(err.fatal)
+        if(err.fatal) {
+            if(Constants.ADMIN_ADRESS) {
+                Constants.TRANSPORT.sendMail({
+                    from: "cliCo <" + Constants.ADMIN_ADRESS + ">",
+                    to: Constants.ADMIN_ADRESS,
+                    subject: "Erreur de génération du modèle 3D",
+                    html: Constants.GENERATION_END_MESSAGE
+                }, function(err) {
+                    if(err)
+                        console.error('[Model3d] Impossible d\'envoyer le mail d\'erreur de génération : ' + err + '.');
+                });
+            }
             this.pause(true, function(err) {
                 if(err)
                     console.error('[Model3d] Traitement (ID = ' + this._attrs.id + ') n\'a pas pu être mis en pause après signalement d\'une erreur !');
             });
+        }
     },
     /**
      * Réalise les traitements associés à la fin de génération d'un modèle
@@ -325,6 +346,22 @@ var Model3d = inherit({
         console.info('[Model3d] Traitement (ID = ' + this._attrs.id + ') terminé');
         if(self.poolIdentifier)
             self.__self.poolModel3d.release(self.poolIdentifier);
+        if(!self._attrs.error && Constants.ADMIN_ADRESS) {
+            self.user(function(err, res) {
+                if(err || !res[0])
+                    return;
+                var recipient = res[0]._attrs.email;
+                Constants.TRANSPORT.sendMail({
+                    from: "cliCo <" + Constants.ADMIN_ADRESS + ">",
+                    to: recipient,
+                    subject: "Fin de génération du modèle 3D",
+                    html: Constants.GENERATION_END_MESSAGE
+                }, function(err) {
+                    if(err)
+                        console.error('[Model3d] Impossible d\'envoyer le mail de fin de génération : ' + err + '.');
+                });
+            });
+        }
         self.update({
             state: Constants.STATE_STOPPED
         }, function(err) {
