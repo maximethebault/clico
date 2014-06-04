@@ -1,14 +1,14 @@
 var async = require('async');
 var mysql = require('mysql');
+var Constants = require('./Constants');
 var sqlCon = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'cnpao',
+    host: Constants.MYSQL_HOST,
+    user: Constants.MYSQL_USER,
+    password: Constants.MYSQL_PASSWORD,
+    database: Constants.MYSQL_DB,
     connectionLimit: 1
 });
 global.sqlCon = sqlCon;
-var Constants = require('./Constants');
 var Model3d = require('./Model3d');
 var WebsocketManager = require('./broadcast/WebsocketManager');
 

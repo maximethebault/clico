@@ -7,7 +7,11 @@ var Constants = {
     STATE_STOPPED: 2,
     // Le nombre de points au-desus duquel on arrêtera le traitement.
     // A adapter en fonction des capacités de la machine sur laquelle tourne la chaîne logicielle.
-    MAX_POINT_LIMIT: 9000000
+    MAX_POINT_LIMIT: 9000000,
+    MYSQL_HOST: 'localhost',
+    MYSQL_USER: 'root',
+    MYSQL_PASSWORD: '',
+    MYSQL_DB: 'cnpao'
 };
 
 module.exports = Constants;
