@@ -3,7 +3,9 @@
         <img src="images/delete.png" alt="delete" title="delete"/>
     </span>
     <div>
-        <h3>1. Sélection des étapes</h3>
+    	<h1 style="text-align: center;">Configuration</h1>
+    	<br />
+        <h5>1. Sélection des étapes</h5>
         <table class="model3d-selector-table model3d-form-selector">
             <tr>
                 <td>
@@ -24,7 +26,7 @@
         <div class="sampling-warning{% if(!o.processSelected[4] || !o.processSelected[5]) { %}  hidden{% } %}" style="text-align: center;"><span class="label label-warning">Attention</span> Le sampling est incompatible avec le texturing</div>
     </div>
     <div>
-        <h3>2. Paramétrage</h3>
+        <h5>2. Paramétrage</h5>
         <div class="model3d-form-params-panel-{%=o.id%}{% if(!o.processAvailable) { %} hidden{% } %}">
             <ul class="nav nav-tabs model3d-form-param-button-{%=o.id%}">
                 <?php
@@ -56,7 +58,7 @@
         </div>
     </div>
     <div>
-        <h3>3. Envoi des fichiers</h3>
+        <h5>3. Envoi des fichiers</h5>
         <ul class="nav nav-tabs model3d-form-file-button-{%=o.id%}">
             <?php
             $files = SpecFile::find('all');
