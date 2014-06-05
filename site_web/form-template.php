@@ -14,7 +14,7 @@
                         if($order < $process->ordering && $order !== -1) {
                             echo '</td><td>';
                         }
-                        echo '<span class="process{% if(o.processSelected[' . $process->id . ']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}">' . $process->name . '</span>';
+                        echo '<span class="process{% if(o.processSelected[' . $process->id . ']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}" data-toggle="tooltip" data-placement="top">' . $process->name . '</span>';
                         $order = $process->ordering;
                     }
                     ?>

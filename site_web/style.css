@@ -159,6 +159,8 @@ body {
     border: 1px solid rgba(155,155,155,0.5);
     padding: 20px;
     border-radius: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .step-name {
