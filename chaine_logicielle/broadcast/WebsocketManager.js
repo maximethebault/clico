@@ -1,6 +1,7 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var inherit = require('inherit');
+var Constants = require('../Constants');
 var WebsocketConnection = require('./WebsocketConnection');
 
 var WebsocketManager = inherit({
@@ -10,7 +11,7 @@ var WebsocketManager = inherit({
             response.writeHead(404);
             response.end();
         });
-        server.listen(8080, 'localhost');
+        server.listen(8080, Constants.WEBSOCKET_HOST);
 
         this.wsServer = new WebSocketServer({
             httpServer: server,
