@@ -1,6 +1,6 @@
 <div class="model3d-form-{%=o.id%} hc-model3d-form" style="position: relative; border: #aaaaaa solid 1px; border-radius: 20px; margin: 20px; padding: 20px;">
     <span class="hc-btn-delte model3d-delete-{%=o.id%}">
-    	<img src="images/delete.png" alt="delete" title="delete"/>
+        <img src="images/delete.png" alt="delete" title="delete"/>
     </span>
     <div>
         <h3>1. Sélection des étapes</h3>
@@ -14,7 +14,7 @@
                         if($order < $process->ordering && $order !== -1) {
                             echo '</td><td>';
                         }
-                        echo '<span class="process{% if(o.processSelected[' . $process->id . ']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}" data-toggle="tooltip" data-placement="top">' . $process->name . '</span>';
+                        echo '<span class="model3d-process process{% if(o.processSelected[' . $process->id . ']) { %} process-selected{% } %}" data-process-id="' . $process->id . '" data-model3d-id="{%=o.id%}" data-toggle="tooltip" data-placement="top" title="' . str_replace('"', '&quot;', $process->description) . '">' . $process->name . '</span>';
                         $order = $process->ordering;
                     }
                     ?>
@@ -146,10 +146,10 @@
     <br /><br />
     <div class="model3d-validation-error hidden" style="position: absolute; margin-top: 7px;"><span class="label label-danger">Erreur</span> <span class="model3d-validation-error-message">Fichier non fourni.</span></div>
     <div style="text-align: center;">
-	    <button type="button" class="btn btn-success btn-model3d-generate" data-toggle="modal" data-target=".model3d-config-modal-{%=o.id%}">
-	        <i class="glyphicon glyphicon-cloud-upload"></i>
-	        <span>Générer modèle 3D</span>
-	    </button>
+        <button type="button" class="btn btn-success btn-model3d-generate" data-toggle="modal" data-target=".model3d-config-modal-{%=o.id%}">
+            <i class="glyphicon glyphicon-cloud-upload"></i>
+            <span>Générer modèle 3D</span>
+        </button>
     </div>
     <br />
 </div>
