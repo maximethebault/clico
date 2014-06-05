@@ -32,7 +32,7 @@ var Param = inherit({
         var self = this;
         var model3d_id = cond.model3d_id;
         var queryArgs = Utils.getQueryArgs(_.omit(cond, 'model3d_id'));
-        sqlCon.query('SELECT p.*, sp.code, sp.value_default FROM spec_param sp LEFT JOIN param p ON p.spec_param_id=sp.id WHERE (p.id IS NULL OR p.model3d_id=' + model3d_id + ') AND (' + queryArgs.where + ')', queryArgs.args, function(err, rows) {
+        sqlCon.query('SELECT p.*, sp.code, sp.value_default FROM spec_param sp LEFT JOIN param p ON p.spec_param_id=sp.id AND p.model3d_id=' + model3d_id + ' WHERE (p.id IS NULL OR p.model3d_id=' + model3d_id + ') AND (' + queryArgs.where + ')', queryArgs.args, function(err, rows) {
             if(err) {
                 var message = '[Param] Erreur lors de la récupération des enregistrements en BDD : ' + err + '.';
                 console.error(message);
