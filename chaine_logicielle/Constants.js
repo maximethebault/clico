@@ -10,7 +10,7 @@ var Constants = {
     // Le nombre de points au-desus duquel on arrêtera le traitement.
     // A adapter en fonction des capacités de la machine sur laquelle tourne la chaîne logicielle.
     MAX_POINT_LIMIT: 9000000,
-    WEBSOCKET_HOST: 'localhost',
+    WEBSOCKET_HOST: '',
     MYSQL_HOST: 'localhost',
     MYSQL_USER: 'root',
     MYSQL_PASSWORD: '',
