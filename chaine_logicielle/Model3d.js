@@ -326,7 +326,7 @@ var Model3d = inherit({
                     from: "cliCo <" + Constants.ADMIN_ADRESS + ">",
                     to: Constants.ADMIN_ADRESS,
                     subject: "Erreur de génération du modèle 3D",
-                    html: Constants.GENERATION_END_MESSAGE
+                    html: Constants.GENERATION_ERR_MESSAGE
                 }, function(err) {
                     if(err)
                         console.error('[Model3d] Impossible d\'envoyer le mail d\'erreur de génération : ' + err + '.');
